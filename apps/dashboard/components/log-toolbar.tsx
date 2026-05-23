@@ -1,4 +1,4 @@
-import { Copy, FileText, Filter, Search } from "lucide-react";
+import { Copy, Filter, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ type LogToolbarProps = {
   severity: SeverityFilter;
   services: DashboardService[];
   visibleLogCount: number;
-  onCopyDebug: () => Promise<void>;
   onCopyLogs: () => Promise<void>;
   onSearchChange: (value: string) => void;
   onSelectService: (serviceName: string) => void;
@@ -79,6 +78,9 @@ export function LogToolbar(props: LogToolbarProps) {
               <Badge variant="outline" className="rounded-full bg-white/80 px-2.5">
                 {props.visibleLogCount} visible
               </Badge>
+              <Badge variant="outline" className="rounded-full bg-white/80 px-2.5">
+                Unified tile only
+              </Badge>
             </div>
           </div>
 
@@ -99,10 +101,6 @@ export function LogToolbar(props: LogToolbarProps) {
             <Button className="rounded-full bg-white/85" onClick={() => void props.onCopyLogs()} size="sm" variant="outline">
               <Copy className="size-3.5" />
               Copy visible logs
-            </Button>
-            <Button className="rounded-full bg-white/85" onClick={() => void props.onCopyDebug()} size="sm" variant="outline">
-              <FileText className="size-3.5" />
-              Copy debug context
             </Button>
           </div>
         </div>

@@ -70,6 +70,7 @@ async function validateServiceConfig(serviceName, rawService, directory, configP
     }
     const command = rawService.command;
     const cwd = rawService.cwd;
+    const group = rawService.group;
     const port = rawService.port;
     if (typeof command !== "string" || command.trim() === "") {
         throw new ConfigError(`Expected service "${serviceName}" to define a non-empty "command" in ${configPath}.`);
@@ -88,12 +89,18 @@ async function validateServiceConfig(serviceName, rawService, directory, configP
     if (!cwdStats.isDirectory()) {
         throw new ConfigError(`Expected service "${serviceName}" cwd to be a directory: ${resolvedCwd}.`);
     }
+    if (group !== undefined && (typeof group !== "string" || group.trim() === "")) {
+        throw new ConfigError(`Expected service "${serviceName}" group to be a non-empty string in ${configPath}.`);
+    }
     if (port !== undefined && (!Number.isInteger(port) || port <= 0)) {
         throw new ConfigError(`Expected service "${serviceName}" port to be a positive integer in ${configPath}.`);
     }
-    return port === undefined
-        ? { command: command.trim(), cwd }
-        : { command: command.trim(), cwd, port };
+    return {
+        command: command.trim(),
+        cwd,
+        ...(group === undefined ? {} : { group: group.trim() }),
+        ...(port === undefined ? {} : { port }),
+    };
 }
 function getDuplicateServiceName(document) {
     const servicesNode = document.get("services", true);

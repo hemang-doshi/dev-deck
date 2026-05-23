@@ -72,15 +72,23 @@ const defaultIo: CommandIo = {
 
 function toServiceDefinition(
   serviceName: string,
-  service: { command: string; cwd: string; port?: number },
+  service: { command: string; cwd: string; group?: string; port?: number },
   directory: string,
 ): ServiceDefinition {
-  return {
+  const definition = {
     name: serviceName,
     command: service.command,
     cwd: path.resolve(directory, service.cwd),
     port: service.port,
-  };
+  } as ServiceDefinition;
+
+  if (service.group !== undefined) {
+    Object.assign(definition as ServiceDefinition & { group?: string }, {
+      group: service.group,
+    });
+  }
+
+  return definition;
 }
 
 function handleSessionEvent(event: SessionEvent, io: CommandIo): void {

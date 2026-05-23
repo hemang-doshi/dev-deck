@@ -10,7 +10,7 @@ const nextConfig = {
     unoptimized: true,
   },
   turbopack: {
-    root: path.resolve(appDirectory, "../.."),
+    root: appDirectory,
   },
 };
 

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm --prefix ../.. run build --workspace @devdeck/core && next build",
+    "build": "npm --prefix ../.. run build --workspace @devdeck/core && next build --webpack",
     "test": "npm --prefix ../.. run build --workspace @devdeck/core && vitest run",
     "lint": "npm --prefix ../.. run build --workspace @devdeck/core && tsc -p tsconfig.json --noEmit"
   },

@@ -34,6 +34,7 @@ describe("loadDevdeckConfig", () => {
         "  web:",
         "    command: npm run dev",
         "    cwd: ./frontend",
+        "    group: frontend",
         "    port: 3000",
       ].join("\n"),
     );
@@ -46,8 +47,51 @@ describe("loadDevdeckConfig", () => {
     expect(loaded.config.services.web).toEqual({
       command: "npm run dev",
       cwd: "./frontend",
+      group: "frontend",
       port: 3000,
     });
+  });
+
+  it("accepts omitted service group fields", async () => {
+    const workspaceDirectory = await createWorkspace();
+
+    await writeConfig(
+      workspaceDirectory,
+      [
+        "project: sample-app",
+        "services:",
+        "  web:",
+        "    command: npm run dev",
+        "    cwd: ./frontend",
+      ].join("\n"),
+    );
+
+    const loaded = await loadDevdeckConfig(workspaceDirectory);
+
+    expect(loaded.config.services.web).toEqual({
+      command: "npm run dev",
+      cwd: "./frontend",
+    });
+  });
+
+  it("fails when service group is not a string", async () => {
+    const workspaceDirectory = await createWorkspace();
+
+    await writeConfig(
+      workspaceDirectory,
+      [
+        "project: sample-app",
+        "services:",
+        "  web:",
+        "    command: npm run dev",
+        "    cwd: ./frontend",
+        "    group: 123",
+      ].join("\n"),
+    );
+
+    await expect(loadDevdeckConfig(workspaceDirectory)).rejects.toThrow(
+      'Expected service "web" group to be a non-empty string',
+    );
   });
 
   it("fails on invalid YAML", async () => {

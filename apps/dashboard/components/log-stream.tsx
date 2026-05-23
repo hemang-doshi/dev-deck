@@ -15,11 +15,15 @@ import { type DashboardLog, type DashboardService } from "../lib/session-client"
 import { cn } from "@/lib/utils";
 
 type LogStreamProps = {
+  color?: "slate" | "sky" | "mint" | "amber" | "rose";
   connectionState: "connecting" | "connected" | "reconnecting" | "disconnected";
   hasReceivedSnapshot: boolean;
+  heightClass?: string;
   logs: DashboardLog[];
   reconnectAttempt: number;
   services: DashboardService[];
+  subtitle?: string;
+  title?: string;
 };
 
 export function LogStream(props: LogStreamProps) {
@@ -28,11 +32,19 @@ export function LogStream(props: LogStreamProps) {
   );
 
   return (
-    <Card className="overflow-hidden rounded-[1.75rem] border border-slate-900/10 bg-[#0f172a] text-slate-100 shadow-[0_24px_70px_rgba(15,23,42,0.28)]">
+    <Card
+      className={cn(
+        "overflow-hidden rounded-[1.75rem] border border-slate-900/10 bg-[#0f172a] text-slate-100 shadow-[0_24px_70px_rgba(15,23,42,0.28)]",
+        colorToneClass(props.color ?? "slate"),
+      )}
+    >
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-slate-950/85 px-4 py-3 backdrop-blur-xl">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <TerminalSquare className="size-4 text-cyan-300" />
-          <strong className="font-medium">Live log stream</strong>
+          <div>
+            <strong className="font-medium">{props.title ?? "Live log stream"}</strong>
+            {props.subtitle ? <div className="text-xs text-slate-400">{props.subtitle}</div> : null}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge className={cn("rounded-full px-2.5", streamStateClass(props.connectionState))}>
@@ -90,7 +102,7 @@ export function LogStream(props: LogStreamProps) {
       ) : null}
 
       {props.logs.length > 0 ? (
-        <ScrollArea className="h-[40rem]">
+        <ScrollArea className={props.heightClass ?? "h-[40rem]"}>
           <div className="grid gap-2 p-4">
             {props.logs.map((log) => (
               <article
@@ -135,4 +147,12 @@ function logToneClass(severity: DashboardLog["severity"]) {
   if (severity === "error") return "border-rose-400/25 bg-rose-400/10";
   if (severity === "warning") return "border-amber-300/20 bg-amber-300/10";
   return "border-cyan-300/12 bg-slate-900/90";
+}
+
+function colorToneClass(color: NonNullable<LogStreamProps["color"]>) {
+  if (color === "sky") return "ring-1 ring-sky-300/25";
+  if (color === "mint") return "ring-1 ring-emerald-300/25";
+  if (color === "amber") return "ring-1 ring-amber-300/25";
+  if (color === "rose") return "ring-1 ring-rose-300/25";
+  return "ring-1 ring-slate-300/20";
 }
