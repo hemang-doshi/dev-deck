@@ -1,4 +1,4 @@
-# ⚡️ DevDeck
+# <img src="assets/icon.png" width="48" height="48" valign="middle" /> DevDeck
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)

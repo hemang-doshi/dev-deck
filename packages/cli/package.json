@@ -1,6 +1,6 @@
 {
   "name": "@devdeck/cli",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
@@ -14,8 +14,8 @@
     "lint": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@devdeck/config": "0.0.0",
-    "@devdeck/core": "0.0.0",
-    "@devdeck/server": "0.0.0"
+    "@devdeck/config": "1.0.0",
+    "@devdeck/core": "1.0.0",
+    "@devdeck/server": "1.0.0"
   }
 }
