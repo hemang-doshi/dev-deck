@@ -47,12 +47,15 @@ export function sanitizeWorkspaceState(
   candidate: unknown,
   services: DashboardService[],
 ): WorkspaceState {
-  const source =
-    isRecord(candidate) &&
-    candidate.version === WORKSPACE_LAYOUT_VERSION &&
-    Array.isArray(candidate.tiles)
-      ? candidate.tiles
-      : [];
+  if (
+    !isRecord(candidate) ||
+    candidate.version !== WORKSPACE_LAYOUT_VERSION ||
+    !Array.isArray(candidate.tiles)
+  ) {
+    return createDefaultWorkspace();
+  }
+
+  const source = candidate.tiles;
   const availableServices = new Set(services.map((service) => service.name));
   const availableGroups = new Set(
     services.flatMap((service) => (service.group ? [service.group] : [])),
@@ -81,10 +84,6 @@ export function sanitizeWorkspaceState(
     nextTiles.push(normalized);
   }
 
-  if (!nextTiles.some((tile) => tile.scopeType === "unified")) {
-    nextTiles.unshift(createDefaultWorkspace().tiles[0]);
-  }
-
   return {
     version: WORKSPACE_LAYOUT_VERSION,
     tiles: sortAndReindexTiles(nextTiles),
@@ -99,10 +98,11 @@ export function sortAndReindexTiles(tiles: WorkspaceTile[]): WorkspaceTile[] {
 
 export function addWorkspaceTile(
   state: WorkspaceState,
-  scopeType: Extract<WorkspaceTileScopeType, "group" | "service">,
+  scopeType: WorkspaceTileScopeType,
   scopeId: string,
 ): WorkspaceState {
-  if (state.tiles.some((tile) => tile.scopeType === scopeType && tile.scopeId === scopeId)) {
+  const tileId = scopeType === "unified" ? "unified" : `${scopeType}:${scopeId}`;
+  if (state.tiles.some((tile) => tile.id === tileId)) {
     return state;
   }
 
@@ -114,10 +114,10 @@ export function addWorkspaceTile(
     tiles: [
       ...state.tiles,
       {
-        id: `${scopeType}:${scopeId}`,
+        id: tileId,
         scopeType,
         scopeId,
-        size: scopeType === "group" ? "md" : "sm",
+        size: scopeType === "unified" ? "lg" : scopeType === "group" ? "md" : "sm",
         color: nextColor,
         order: nextOrder,
       },
@@ -128,7 +128,7 @@ export function addWorkspaceTile(
 export function removeWorkspaceTile(state: WorkspaceState, tileId: string): WorkspaceState {
   const tile = state.tiles.find((entry) => entry.id === tileId);
 
-  if (!tile || tile.scopeType === "unified") {
+  if (!tile) {
     return state;
   }
 
@@ -157,7 +157,7 @@ export function cycleTileSize(state: WorkspaceState, tileId: string): WorkspaceS
   return {
     ...state,
     tiles: state.tiles.map((tile) => {
-      if (tile.id !== tileId || tile.scopeType === "unified") {
+      if (tile.id !== tileId) {
         return tile;
       }
 

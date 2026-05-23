@@ -14,4 +14,4 @@ This example is a self-contained local stack for exercising the DevDeck MVP.
 node ../../packages/cli/dist/index.js dev
 ```
 
-The included [`devdeck.yml`](/Users/hemangdoshi/Developer/dev-deck/examples/fullstack-basic/devdeck.yml) is ready to use as-is.
+The included [`devdeck.yml`](devdeck.yml) is ready to use as-is.

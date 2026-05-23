@@ -106,7 +106,7 @@ describe("DashboardShell", () => {
 
     expect(screen.getByTestId("workspace-tile-group:backend")).toBeInTheDocument();
     expect(screen.getByTestId("workspace-tile-service:web")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Remove Unified stream" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove Unified stream" })).toBeInTheDocument();
 
     const backendTile = screen.getByTestId("workspace-tile-group:backend");
     expect(within(backendTile).getByText("Warning: backend degraded")).toBeInTheDocument();
