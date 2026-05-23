@@ -1,0 +1,31 @@
+# Full-Stack Application with Infrastructure Example
+# This config shows how to orchestrate local developer services alongside local infrastructure like Docker Compose.
+
+project: devdeck-fullstack
+
+services:
+  # Spin up local database and cache using docker compose
+  postgres-redis:
+    command: docker compose up database cache
+    cwd: .
+    group: infra
+
+  # Frontend web app
+  web:
+    command: npm run dev
+    cwd: .
+    port: 3000
+    group: app
+
+  # Backend API server
+  api:
+    command: npm run start:dev
+    cwd: .
+    port: 8000
+    group: app
+
+  # Worker task queue consumer
+  worker:
+    command: node worker.js
+    cwd: .
+    group: app

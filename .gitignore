@@ -7,11 +7,13 @@ coverage/
 *.tgz
 *.tsbuildinfo
 
+# Temporary and Agent/Operator files
 DIFF_CHANGES.md
 SNAPSHOT.md
-.env
-.env.local
 AGENTS.md
+.agents/
+Docs/docs_*.md
+Docs/superpowers/
 
 # Codex local configuration
 .codex/
@@ -25,3 +27,4 @@ AGENTS.md
 .env
 .env.local
 .env.*.local
+

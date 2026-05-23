@@ -1,0 +1,25 @@
+# Monorepo DevDeck Configuration Example
+# This config demonstrates a monorepo setup with separate packages and directories.
+
+project: monorepo-app
+
+services:
+  # Next.js web application running from apps/web
+  web-app:
+    command: npm run dev
+    cwd: ./apps/web
+    port: 3000
+    group: frontend
+
+  # Node.js backend API running from packages/api
+  api-service:
+    command: npm run start
+    cwd: ./packages/api
+    port: 8080
+    group: backend
+
+  # Background worker running from packages/worker
+  worker-service:
+    command: npm run worker
+    cwd: ./packages/worker
+    group: backend
