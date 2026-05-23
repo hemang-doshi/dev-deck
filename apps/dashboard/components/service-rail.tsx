@@ -3,14 +3,7 @@ import { AlertCircle, Play, RefreshCw, ServerCog, Square, Wifi, WifiOff } from "
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Empty,
   EmptyDescription,
@@ -18,12 +11,10 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Separator } from "@/components/ui/separator";
-import { ShineBorder } from "@/components/ui/shine-border";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { type DashboardService } from "../lib/session-client";
 import { cn } from "@/lib/utils";
+import { type DashboardService } from "../lib/session-client";
 
 type ServiceRailProps = {
   services: DashboardService[];
@@ -37,49 +28,48 @@ type ServiceRailProps = {
 
 export function ServiceRail(props: ServiceRailProps) {
   return (
-    <aside className="grid gap-4">
-      <button
-        className={cn(
-          "relative overflow-hidden rounded-3xl border p-4 text-left transition-all",
-          props.selectedService === "all"
-            ? "border-slate-900/10 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
-            : "border-white/70 bg-white/65 hover:bg-white/80",
-        )}
-        onClick={() => props.onSelectService("all")}
-        type="button"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-950">All services</div>
-            <div className="mt-1 text-sm text-slate-500">Unified session stream</div>
+    <aside className="grid gap-4 xl:sticky xl:top-6">
+      <Card className="rounded-[1.75rem] border-white/70 bg-white/72 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+        <CardContent className="grid gap-3 p-3">
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div>
+              <div className="text-sm font-semibold text-slate-950">Services</div>
+              <div className="text-xs text-slate-500">Compact rail with selected-row actions</div>
+            </div>
+            <Badge variant="outline" className="rounded-full bg-white/80 px-2.5">
+              {props.services.length}
+            </Badge>
           </div>
-          <Badge variant="outline" className="rounded-full bg-white/80 px-2.5">
-            {props.services.length}
-          </Badge>
-        </div>
-      </button>
 
-      {!props.hasReceivedSnapshot ? (
-        <div className="grid gap-3">
-          {Array.from({ length: 3 }, (_, index) => (
-            <Card key={index} className="rounded-3xl border-white/70 bg-white/65">
-              <CardHeader>
-                <Skeleton className="h-5 w-28 rounded-full" />
-                <Skeleton className="h-4 w-full rounded-full" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-4 w-24 rounded-full" />
-                <Skeleton className="h-4 w-20 rounded-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : null}
+          <button
+            className={cn(
+              "flex items-center justify-between rounded-2xl border px-3 py-2 text-left transition-all",
+              props.selectedService === "all"
+                ? "border-slate-900/10 bg-slate-950 text-white shadow-[0_16px_35px_rgba(15,23,42,0.18)]"
+                : "border-white/70 bg-white/80 text-slate-900 hover:bg-white",
+            )}
+            onClick={() => props.onSelectService("all")}
+            type="button"
+          >
+            <span className="text-sm font-medium">All services</span>
+            <span className={cn("text-xs", props.selectedService === "all" ? "text-slate-200" : "text-slate-500")}>
+              Unified
+            </span>
+          </button>
 
-      {props.hasReceivedSnapshot && props.services.length === 0 ? (
-        <Card className="rounded-3xl border-dashed border-slate-300/80 bg-white/60">
-          <CardContent className="p-0">
-            <Empty className="border-0">
+          {!props.hasReceivedSnapshot ? (
+            <div className="grid gap-2">
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={index} className="rounded-2xl border border-white/70 bg-white/70 p-3">
+                  <Skeleton className="h-4 w-24 rounded-full" />
+                  <Skeleton className="mt-2 h-3 w-18 rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {props.hasReceivedSnapshot && props.services.length === 0 ? (
+            <Empty className="rounded-2xl border border-dashed border-slate-300/80 bg-white/70">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <ServerCog />
@@ -88,105 +78,71 @@ export function ServiceRail(props: ServiceRailProps) {
                 <EmptyDescription>The current session snapshot did not expose any managed services.</EmptyDescription>
               </EmptyHeader>
             </Empty>
-          </CardContent>
-        </Card>
-      ) : null}
+          ) : null}
 
-      {props.services.map((service) => {
-        const active = props.selectedService === service.name;
-        const unhealthy = service.health === "unreachable" || service.status === "error" || service.status === "exited";
+          {props.services.map((service) => {
+            const active = props.selectedService === service.name;
+            const unhealthy =
+              service.health === "unreachable" || service.status === "error" || service.status === "exited";
 
-        return (
-          <Card
-            key={service.name}
-            className={cn(
-              "relative overflow-hidden rounded-3xl border-white/70 bg-white/72 backdrop-blur-xl transition-all",
-              active && "border-slate-900/10 shadow-[0_18px_50px_rgba(15,23,42,0.14)]",
-            )}
-          >
-            {active ? (
-              <ShineBorder
-                borderWidth={1.25}
-                duration={16}
-                shineColor={
-                  unhealthy
-                    ? ["rgba(251,191,36,0.18)", "rgba(248,113,113,0.2)"]
-                    : ["rgba(34,197,94,0.16)", "rgba(59,130,246,0.16)"]
-                }
-              />
-            ) : null}
-
-            <CardHeader className="relative gap-3">
-              <button
-                className="space-y-2 text-left"
-                onClick={() => props.onSelectService(service.name)}
-                type="button"
+            return (
+              <div
+                key={service.name}
+                className={cn(
+                  "rounded-2xl border px-3 py-2 text-left transition-all",
+                  active
+                    ? "border-slate-900/10 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.12)]"
+                    : "border-white/70 bg-white/70 hover:bg-white",
+                )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>{service.name}</CardTitle>
-                    <CardDescription className="mt-1 break-all text-xs leading-5">
-                      {service.command}
-                    </CardDescription>
+                <button className="w-full text-left" onClick={() => props.onSelectService(service.name)} type="button">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium text-slate-950">{service.name}</span>
+                        {service.group ? (
+                          <Badge variant="outline" className="rounded-full bg-white/80 px-2 py-0 text-[10px]">
+                            {service.group}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1">
+                          {service.health === "healthy" ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
+                          {service.health}
+                        </span>
+                        {service.port ? <span>:{service.port}</span> : null}
+                        {service.restartCount > 0 ? <span>r{service.restartCount}</span> : null}
+                      </div>
+                    </div>
+                    <Badge className={cn("rounded-full px-2.5", statusBadgeClass(service.status))}>
+                      {service.status}
+                    </Badge>
                   </div>
-                  <Badge className={cn("rounded-full px-2.5", statusBadgeClass(service.status))}>
-                    {service.status}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="rounded-full bg-white/75 px-2.5">
-                    {service.health === "healthy" ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-                    {service.health}
-                  </Badge>
-                  {service.port ? (
-                    <Badge variant="outline" className="rounded-full bg-white/75 px-2.5">
-                      port {service.port}
-                    </Badge>
-                  ) : null}
-                  {service.restartCount > 0 ? (
-                    <Badge variant="outline" className="rounded-full bg-white/75 px-2.5">
-                      restarts {service.restartCount}
-                    </Badge>
-                  ) : null}
-                  {service.lastExitCode !== null ? (
-                    <Badge variant="outline" className="rounded-full bg-white/75 px-2.5">
-                      exit {service.lastExitCode}
-                    </Badge>
-                  ) : null}
-                </div>
-              </button>
-            </CardHeader>
+                </button>
 
-            <CardContent className="space-y-3 text-sm text-slate-600">
-              <Separator className="bg-slate-200/80" />
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between gap-3">
-                  <span>PID</span>
-                  <span className="font-medium text-slate-900">{service.pid ?? "Not running"}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span>Last error</span>
-                  <span className="max-w-[11rem] truncate font-medium text-slate-900">
-                    {service.lastError ?? "None"}
-                  </span>
-                </div>
+                {active ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3">
+                    <ActionButton label="Start" onClick={() => props.onStart(service.name)} icon={<Play className="size-3.5" />} />
+                    <ActionButton label="Stop" onClick={() => props.onStop(service.name)} icon={<Square className="size-3.5" />} />
+                    <ActionButton label="Restart" onClick={() => props.onRestart(service.name)} icon={<RefreshCw className="size-3.5" />} />
+                    {service.lastError ? (
+                      <span className="ml-auto max-w-[10rem] truncate text-[11px] text-amber-700">
+                        {service.lastError}
+                      </span>
+                    ) : unhealthy ? (
+                      <Badge variant="outline" className="ml-auto rounded-full border-amber-300 bg-amber-50 px-2.5 text-amber-700">
+                        <AlertCircle className="size-3" />
+                        Needs attention
+                      </Badge>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
-            </CardContent>
-
-            <CardFooter className="relative flex flex-wrap gap-2 border-t border-slate-200/70 bg-slate-50/70">
-              <ActionButton label="Start" onClick={() => props.onStart(service.name)} icon={<Play className="size-3.5" />} />
-              <ActionButton label="Stop" onClick={() => props.onStop(service.name)} icon={<Square className="size-3.5" />} />
-              <ActionButton label="Restart" onClick={() => props.onRestart(service.name)} icon={<RefreshCw className="size-3.5" />} />
-              {unhealthy ? (
-                <Badge variant="outline" className="ml-auto rounded-full border-amber-300 bg-amber-50 px-2.5 text-amber-700">
-                  <AlertCircle className="size-3" />
-                  Needs attention
-                </Badge>
-              ) : null}
-            </CardFooter>
-          </Card>
-        );
-      })}
+            );
+          })}
+        </CardContent>
+      </Card>
     </aside>
   );
 }
@@ -207,7 +163,10 @@ function ActionButton({
           <Button
             aria-label={label}
             className="rounded-full bg-white/80 px-3"
-            onClick={() => void onClick()}
+            onClick={(event) => {
+              event.stopPropagation();
+              void onClick();
+            }}
             size="sm"
             variant="outline"
           />

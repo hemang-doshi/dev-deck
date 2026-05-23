@@ -4,7 +4,7 @@ import { startTransition, useEffect, useState } from "react";
 
 import type { LogEvent, ServiceSnapshot, SessionSnapshot } from "@devdeck/core";
 
-export type DashboardService = ServiceSnapshot;
+export type DashboardService = ServiceSnapshot & { group?: string };
 export type DashboardLog = LogEvent;
 export type DashboardSnapshot = SessionSnapshot;
 export type SeverityFilter = "all" | "info" | "warning" | "error";

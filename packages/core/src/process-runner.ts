@@ -7,6 +7,7 @@ export type ServiceDefinition = {
   name: string;
   command: string;
   cwd: string;
+  group?: string;
   port?: number;
 };
 

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import {
   Activity,
   Download,
+  FileText,
   PlugZap,
   SquareTerminal,
   StopCircle,
@@ -24,6 +25,7 @@ type SessionHeaderProps = {
   connectionState: "connecting" | "connected" | "reconnecting" | "disconnected";
   lastConnectedAt: string | null;
   feedback: string | null;
+  onCopyDebug: () => Promise<void>;
   onExport: () => Promise<void>;
   onStopSession: () => Promise<void>;
 };
@@ -66,6 +68,16 @@ export function SessionHeader(props: SessionHeaderProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <ShimmerButton
+              aria-label="Copy debug context"
+              className="h-9 px-4 text-sm font-medium text-slate-900"
+              onClick={() => void props.onCopyDebug()}
+              background="rgba(255,255,255,0.9)"
+              shimmerColor="#bfdbfe"
+            >
+              <FileText className="size-4" />
+              Copy debug context
+            </ShimmerButton>
             <ShimmerButton
               aria-label="Export session"
               className="h-9 px-4 text-sm font-medium text-white"

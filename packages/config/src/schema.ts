@@ -1,6 +1,7 @@
 export type DevdeckServiceConfig = {
   command: string;
   cwd: string;
+  group?: string;
   port?: number;
 };
 
