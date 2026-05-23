@@ -3,74 +3,88 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-**Agent DevDeck** is a local-first agent control plane for starting, stopping, inspecting, and debugging multi-service local stacks through a bounded CLI and optional web dashboard.
-
-Instead of scattering local orchestration across shell history, terminal tabs, and ad hoc scripts, Agent DevDeck runs native process trees, exposes targeted session state and logs through lightweight local HTTP endpoints, and keeps the dashboard available for manual inspection when you want it.
+**Agent DevDeck** is a local-first development control plane for starting, stopping, inspecting, and debugging multi-service local stacks. It features a bounded CLI and web dashboard, designed from the ground up to be **agent-first** (easy for AI coding agents to control with minimum token overhead) and **human-friendly**.
 
 ---
 
 ## Features
 
-- **Agent CLI control:** Start a local stack once with `devdeck dev`, then query state with `devdeck status`, `devdeck logs`, and `devdeck snapshot`.
-- **Bounded debugging surface:** Service actions and log inspection stay local, concise, and token-efficient.
-- **Service orchestration:** Launch and manage a multi-service stack with a single config file and foreground runner.
-- **Live dashboard:** Stream logs into the local dashboard for manual inspection when a browser view is useful.
-- **Local-first:** No accounts, no cloud relay, no remote log shipping.
+- **Agent-First Design:** Easy non-blocking background running via `devdeck start` and token-efficient state snapshots via `devdeck snapshot`.
+- **Diagnostic Error System:** Built-in error numbering (`[DD-ERR-XXXX]`) and stderr hints for rapid self-healing by AI agents and humans alike.
+- **Service Orchestration:** Launch and manage a multi-service stack with a single `devdeck.yml` config file.
+- **Live Web Dashboard:** Stream logs and control processes in a clean web UI.
+- **Zero Hoisting/Self-Contained:** Published as a single, compiled npm package containing all logic and dashboard assets for fast setup.
 
 ---
 
 ## 🚀 Quick Start
 
 ### 1. Installation
-Install `devdeck` globally or run from local source:
+
+Install DevDeck directly in your software projects:
+
 ```bash
-npm install -g devdeck
+npm install -D devdeck
 ```
 
 ### 2. Initialize Config
+
 Generate a starting `devdeck.yml` configuration:
+
 ```bash
-devdeck init
+npx devdeck init
 ```
-This writes a starter configuration file at the root:
+
+Example config:
+
 ```yaml
 project: my-awesome-app
 services:
   web:
     command: npm run dev
-    cwd: .
+    cwd: ./frontend
     port: 3000
-    group: web
+    group: frontend
+  api:
+    command: npm start
+    cwd: ./backend
+    port: 8080
+    group: backend
 ```
 
-### 3. Start Agent DevDeck
-Launch the session runner and local dashboard server:
+### 3. Start DevDeck
+
+To start in the foreground (blocks shell, displays logs):
+
 ```bash
-devdeck dev
+npx devdeck dev
 ```
 
-Then use the bounded agent commands:
+To start in the background (detached daemon mode, ideal for AI agents and automation):
 
 ```bash
-devdeck status
-devdeck logs api --tail 80
-devdeck snapshot
+npx devdeck start
 ```
 
-Open **`http://127.0.0.1:4545`** when you want the local dashboard view.
+### 4. Monitor & Control
+
+Once running, use the bounded CLI commands:
+
+- **Check status:** `npx devdeck status`
+- **Query logs:** `npx devdeck logs api --tail 50`
+- **Check health snapshot:** `npx devdeck snapshot`
+- **Restart service:** `npx devdeck service restart api`
+- **Stop everything:** `npx devdeck stop`
+
+Open **`http://127.0.0.1:4545`** to view the live local web dashboard.
 
 ---
 
-## 📚 Documentation
+## 📖 Guides & Onboarding
 
-For complete reference guides, architecture layout, and setup guides, please explore the [Docs/](Docs/README.md) folder:
-
-- [Getting Started](Docs/getting-started.md) - installation, execution, and CLI reference.
-- [Agent CLI](Docs/agent-cli.md) - bounded agent commands, session discovery, and runtime behavior.
-- [Configuration Reference](Docs/configuration.md) - `devdeck.yml` schema and examples.
-- [Dashboard User Guide](Docs/dashboard.md) - local dashboard behavior and controls.
-- [Architecture & Internals](Docs/architecture.md) - package structure and runtime data flow.
-- [Troubleshooting & FAQs](Docs/troubleshooting.md) - common local issues and fixes.
+- **[LLMs.md](LLMs.md)**: Agent-first onboarding prompt and instructions. Copy-paste directly into your agent to let it configure and control DevDeck.
+- **[HUMANs.md](HUMANs.md)**: Human developer onboarding, command lists, and custom setup guide.
+- **[Docs/](Docs/README.md)**: Full reference manual covering configuration schemas, architecture, and advanced options.
 
 ---
 

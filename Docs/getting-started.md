@@ -16,12 +16,18 @@ Agent DevDeck requires the following installed on your machine:
 
 You can install `devdeck` globally or compile and run it locally from source.
 
+### Local Installation in a Project (Recommended)
+You can install `devdeck` directly in your software project:
+```bash
+npm install -D devdeck
+```
+
 ### Global Installation (via npm)
 ```bash
 npm install -g devdeck
 ```
 
-### Local Development Installation
+### Run from Source / Clone
 If you have cloned the repository and want to run it from source:
 ```bash
 # Install root workspace dependencies
@@ -58,11 +64,20 @@ services:
 
 ## 3. Start the Session
 
-To start your service runner and launch the local session server:
+You can start the session server and runner in either **foreground** (blocks the shell and streams all outputs) or **background** (detached daemon) mode.
+
+### Foreground Mode
 ```bash
 devdeck dev
 ```
 *(If running from local source, run: `node packages/cli/dist/index.js dev`)*
+
+### Background (Detached) Mode
+Highly recommended for automation, scripts, and coding agents to start the stack without blocking the shell:
+```bash
+devdeck start
+```
+*(If running from local source, run: `node packages/cli/dist/index.js start`)*
 
 Once launched, Agent DevDeck will:
 1. Spawn native process trees for all services listed in `devdeck.yml`.
@@ -78,10 +93,17 @@ Once launched, Agent DevDeck will:
 Generates a boilerplate `devdeck.yml` config in the current directory if one does not already exist.
 
 ### `dev`
-Starts the orchestration runner.
+Starts the orchestration runner in the foreground.
 - **Port flag:** Customize the dashboard server port (defaults to `4545`).
   ```bash
   devdeck dev --port 5000
+  ```
+
+### `start`
+Starts the orchestration runner in the background as a detached process (daemon). It redirects standard outputs to `.devdeck/devdeck.log` and exits immediately once it verifies the session server is responsive.
+- **Port flag:** Customize the dashboard server port (defaults to `4545`).
+  ```bash
+  devdeck start --port 5000
   ```
 
 ### `agent setup`

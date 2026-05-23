@@ -6,13 +6,14 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @devdeck/cli --workspace @devdeck/dashboard",
-    "test": "npm run test --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @devdeck/cli --workspace @devdeck/dashboard",
-    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @devdeck/cli --workspace @devdeck/dashboard"
+    "build": "npm run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace devdeck --workspace @devdeck/dashboard",
+    "test": "npm run test --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace devdeck --workspace @devdeck/dashboard",
+    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace devdeck --workspace @devdeck/dashboard"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/ws": "^8.18.1",
+    "esbuild": "^0.28.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.7"
   }

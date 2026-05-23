@@ -1,4 +1,5 @@
 import type { LogSeverity, SessionSnapshot } from "@devdeck/core";
+import { DevdeckError } from "@devdeck/config";
 import { DEFAULT_SESSION_URL, resolveSessionBaseUrl } from "./session-state.js";
 
 export type AgentClientOptions = {
@@ -94,8 +95,10 @@ async function requestJson<T>(
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch (error) {
-    throw new Error(
-      `Unable to reach Agent DevDeck session at ${baseUrl}. Start it with \`devdeck dev\` or pass --url. ${getErrorMessage(error)}`,
+    throw new DevdeckError(
+      "DD-ERR-0012",
+      `Unable to reach DevDeck session server at ${baseUrl}.`,
+      "Start the session first using 'devdeck start' or 'devdeck dev' in your project root, or verify the '--url' parameter."
     );
   }
 

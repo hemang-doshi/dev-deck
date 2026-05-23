@@ -68,3 +68,28 @@ If you terminate the DevDeck CLI but discover that the child services (like back
 1. DevDeck attempts to kill child process trees gracefully using `SIGINT`/`SIGTERM` on shutdown. However, certain wrapper shell commands (like double shell scripts) might lose process tree attachments.
 2. Kill the hanging processes manually using terminal signals (e.g. `kill -9 $(lsof -t -i:<port>)`).
 3. Simplify service commands. Avoid nested shell scripts where possible, letting DevDeck call the executable directly.
+
+---
+
+## 5. Diagnostic Error Codes Reference (DD-ERR-XXXX)
+
+DevDeck uses structured error codes printed to stderr to allow human developers and LLM agents to resolve misconfigurations and issues autonomously.
+
+| Error Code | Title | Troubleshooting Hint / Suggestion |
+|---|---|---|
+| `DD-ERR-0001` | Config file not found | Run `devdeck init` to create a starter `devdeck.yml` file in the current directory. |
+| `DD-ERR-0002` | Invalid YAML syntax | Fix YAML syntax errors (e.g., indentation or missing colons) in `devdeck.yml`. |
+| `DD-ERR-0003` | Duplicate service name | Ensure all service keys under `services` in `devdeck.yml` are unique. |
+| `DD-ERR-0004` | Invalid config schema | Verify the layout of `devdeck.yml`. It must define a `project` name and a `services` map. |
+| `DD-ERR-0005` | Missing service command | Define a non-empty `command` string for the reported service in `devdeck.yml`. |
+| `DD-ERR-0006` | Missing service cwd | Define a non-empty `cwd` path specifying the working directory for the service in `devdeck.yml`. |
+| `DD-ERR-0007` | cwd does not exist | Create the directory or correct the `cwd` path in `devdeck.yml`. |
+| `DD-ERR-0008` | Invalid service group | Correct the `group` property. It must be a non-empty string. |
+| `DD-ERR-0009` | Invalid service port | Correct the `port` property. It must be a positive integer. |
+| `DD-ERR-0010` | Port already in use | Specify a different port using `--port <number>` or stop the process running on that port. |
+| `DD-ERR-0011` | Service execution crashed | Run `devdeck logs <service>` to see the exact logs and crash reason. |
+| `DD-ERR-0012` | Session server unreachable | Start the session first using `devdeck start` or `devdeck dev`. |
+| `DD-ERR-0013` | Session already running | A background DevDeck process is already running. Run `devdeck stop` first. |
+| `DD-ERR-0014` | Background startup timeout | Check the background daemon logs at `.devdeck/devdeck.log` for logs. |
+| `DD-ERR-0015` | Session server startup failure | Ensure your network configuration allows binding on localhost interfaces. |
+

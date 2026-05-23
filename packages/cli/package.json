@@ -1,21 +1,25 @@
 {
-  "name": "@devdeck/cli",
+  "name": "devdeck",
   "version": "1.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "devdeck": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
-    "build": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && tsc -p tsconfig.json",
-    "test": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && vitest run",
-    "lint": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && tsc -p tsconfig.json --noEmit"
+    "build": "node build.js",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@devdeck/config": "1.0.0",
-    "@devdeck/core": "1.0.0",
-    "@devdeck/server": "1.0.0"
+    "ws": "^8.18.3",
+    "yaml": "^2.8.1"
   }
 }
