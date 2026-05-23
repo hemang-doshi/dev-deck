@@ -1,0 +1,19 @@
+# Simple DevDeck Configuration Example
+# This config demonstrates a typical frontend + backend API service setup.
+
+project: simple-stack
+
+services:
+  # The frontend service
+  frontend:
+    command: npm run dev
+    cwd: .
+    port: 3000
+    group: web
+
+  # The backend API service
+  backend:
+    command: python main.py
+    cwd: .
+    port: 8000
+    group: api
