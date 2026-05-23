@@ -10,3 +10,16 @@ DIFF_CHANGES.md
 SNAPSHOT.md
 .env
 .env.local
+AGENTS.md
+
+# Codex local configuration
+.codex/
+
+# Claude Flow runtime data
+.claude-flow/data/
+.claude-flow/logs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local

@@ -213,6 +213,14 @@ export class ServiceSession {
       return;
     }
 
+    const changed = Object.entries(patch).some(
+      ([key, value]) => current[key as keyof ServiceSnapshot] !== value,
+    );
+
+    if (!changed) {
+      return;
+    }
+
     const updated = { ...current, ...patch };
     this.#services.set(serviceName, updated);
     this.emit({ type: "service", service: updated });

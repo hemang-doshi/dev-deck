@@ -8,7 +8,13 @@ export type DashboardService = ServiceSnapshot;
 export type DashboardLog = LogEvent;
 export type DashboardSnapshot = SessionSnapshot;
 export type SeverityFilter = "all" | "info" | "warning" | "error";
-export type ConnectionState = "connecting" | "connected" | "disconnected";
+export type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected";
+export type ConnectionMeta = {
+  hasReceivedSnapshot: boolean;
+  lastConnectedAt: string | null;
+  reconnectAttempt: number;
+  reconnectScheduledAt: string | null;
+};
 
 type OutboundState =
   | {
@@ -33,6 +39,7 @@ export type BrowserSessionClient = {
   connect: (
     handlers: {
       onConnectionState: (state: ConnectionState) => void;
+      onConnectionMeta?: (meta: Partial<ConnectionMeta>) => void;
       onFeedback: (message: string | null) => void;
       onSnapshot: (snapshot: DashboardSnapshot) => void;
       onEvent: (message: OutboundState) => void;
@@ -55,19 +62,32 @@ export function createBrowserSessionClient(): BrowserSessionClient {
       let active = true;
       let socket: WebSocket | null = null;
       let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+      let closingForCleanup = false;
+      let reconnectAttempt = 0;
 
       const connect = () => {
-        handlers.onConnectionState(socket ? "connecting" : "connecting");
+        if (!active) {
+          return;
+        }
+
+        handlers.onConnectionState(reconnectAttempt > 0 ? "reconnecting" : "connecting");
         socket = new WebSocket(toWebsocketUrl());
 
         socket.addEventListener("open", () => {
+          reconnectAttempt = 0;
           handlers.onConnectionState("connected");
+          handlers.onConnectionMeta?.({
+            lastConnectedAt: new Date().toISOString(),
+            reconnectAttempt: 0,
+            reconnectScheduledAt: null,
+          });
         });
 
         socket.addEventListener("message", (event) => {
           const message = JSON.parse(event.data as string) as OutboundState;
 
           if (message.type === "snapshot") {
+            handlers.onConnectionMeta?.({ hasReceivedSnapshot: true });
             handlers.onSnapshot(message.snapshot);
             return;
           }
@@ -84,11 +104,19 @@ export function createBrowserSessionClient(): BrowserSessionClient {
         });
 
         socket.addEventListener("close", () => {
-          handlers.onConnectionState("disconnected");
+          socket = null;
 
-          if (active) {
-            reconnectTimer = setTimeout(connect, 1_000);
+          if (closingForCleanup || !active) {
+            return;
           }
+
+          reconnectAttempt += 1;
+          handlers.onConnectionState("reconnecting");
+          handlers.onConnectionMeta?.({
+            reconnectAttempt,
+            reconnectScheduledAt: new Date(Date.now() + 1_000).toISOString(),
+          });
+          reconnectTimer = setTimeout(connect, 1_000);
         });
       };
 
@@ -96,6 +124,7 @@ export function createBrowserSessionClient(): BrowserSessionClient {
 
       return () => {
         active = false;
+        closingForCleanup = true;
 
         if (reconnectTimer) {
           clearTimeout(reconnectTimer);
@@ -123,11 +152,20 @@ export function createBrowserSessionClient(): BrowserSessionClient {
 export function useSessionClient(client: BrowserSessionClient) {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot>(EMPTY_SNAPSHOT);
   const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
+  const [connectionMeta, setConnectionMeta] = useState<ConnectionMeta>({
+    hasReceivedSnapshot: false,
+    lastConnectedAt: null,
+    reconnectAttempt: 0,
+    reconnectScheduledAt: null,
+  });
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     return client.connect({
       onConnectionState: setConnectionState,
+      onConnectionMeta(meta) {
+        setConnectionMeta((current) => ({ ...current, ...meta }));
+      },
       onFeedback: setFeedback,
       onSnapshot(nextSnapshot) {
         startTransition(() => {
@@ -148,7 +186,11 @@ export function useSessionClient(client: BrowserSessionClient) {
 
   return {
     connectionState,
+    hasReceivedSnapshot: connectionMeta.hasReceivedSnapshot,
     feedback,
+    lastConnectedAt: connectionMeta.lastConnectedAt,
+    reconnectAttempt: connectionMeta.reconnectAttempt,
+    reconnectScheduledAt: connectionMeta.reconnectScheduledAt,
     snapshot,
     async copyText(value: string, successMessage: string) {
       await navigator.clipboard.writeText(value);
