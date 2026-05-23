@@ -1,0 +1,10 @@
+{
+  "name": "@devdeck/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"console.log('build @devdeck/dashboard placeholder')\"",
+    "test": "node -e \"console.log('test @devdeck/dashboard placeholder')\"",
+    "lint": "node -e \"console.log('lint @devdeck/dashboard placeholder')\""
+  }
+}
