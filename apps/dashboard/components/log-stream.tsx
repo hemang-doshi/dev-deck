@@ -37,12 +37,14 @@ export function LogStream(props: LogStreamProps) {
     >
       {/* ── Terminal toolbar ── */}
       <div className="flex items-center justify-between gap-3 border-b border-white/6 bg-[#0b1623] px-3 py-2">
-        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-slate-400">
-          {stateIcon(props.connectionState)}
-          {props.title ?? "stream"}
+        <div className="flex min-w-0 flex-col">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+            {stateIcon(props.connectionState)}
+            {props.title ?? "stream"}
+          </div>
           {props.subtitle ? (
-            <span className="ml-1 normal-case tracking-normal text-slate-600">
-              — {props.subtitle}
+            <span className="mt-0.5 truncate text-[10px] text-slate-600">
+              {props.subtitle}
             </span>
           ) : null}
         </div>
@@ -74,8 +76,8 @@ export function LogStream(props: LogStreamProps) {
 
       {/* ── Loading skeletons ── */}
       {!props.hasReceivedSnapshot ? (
-        <div className="grid gap-2 p-3">
-          {Array.from({ length: 8 }, (_, index) => (
+        <div className="grid gap-2 p-3" style={{ minHeight: props.heightClass ? undefined : "10rem" }}>
+          {Array.from({ length: 6 }, (_, index) => (
             <div key={index} className="rounded-md border border-white/6 bg-white/[0.03] p-2">
               <Skeleton className="h-3 w-28 bg-white/8" />
               <Skeleton className="mt-2 h-3 w-3/4 bg-white/8" />
@@ -86,7 +88,10 @@ export function LogStream(props: LogStreamProps) {
 
       {/* ── Empty state ── */}
       {props.hasReceivedSnapshot && props.logs.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center px-6 py-16 text-center">
+        <div
+          className="flex flex-1 items-center justify-center px-6 py-16 text-center"
+          style={{ minHeight: "12rem" }}
+        >
           <div className="max-w-sm space-y-2">
             <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-300">
               {props.connectionState === "reconnecting" ? (
@@ -126,13 +131,12 @@ export function LogStream(props: LogStreamProps) {
 
               return (
                 <article
-                  key={`${log.timestamp}-${log.id}`}
+                  key={log.id}
                   className={cn(
                     "rounded-md border border-transparent px-2 py-1.5",
                     stackTraceGroup
                       ? "ml-6 border-l border-l-white/8 pl-3"
-                      : "bg-white/[0.015]",
-                    logLineToneClass(log.severity),
+                      : ["bg-white/[0.015]", logLineToneClass(log.severity)],
                   )}
                 >
                   {/* Metadata row: timestamp · service pill · severity · stream */}
@@ -182,11 +186,13 @@ function logLineToneClass(severity: DashboardLog["severity"]) {
 }
 
 function colorRingClass(color: NonNullable<LogStreamProps["color"]>) {
-  if (color === "sky") return "ring-1 ring-sky-300/25";
-  if (color === "mint") return "ring-1 ring-emerald-300/25";
-  if (color === "amber") return "ring-1 ring-amber-300/25";
-  if (color === "rose") return "ring-1 ring-rose-300/25";
-  return "ring-1 ring-slate-300/10";
+  // Accent expressed as a top border strip so it doesn't compete with the
+  // outer tile border that `tileCardColorClass` already sets.
+  if (color === "sky") return "border-t-2 border-t-sky-400/50";
+  if (color === "mint") return "border-t-2 border-t-emerald-400/50";
+  if (color === "amber") return "border-t-2 border-t-amber-400/50";
+  if (color === "rose") return "border-t-2 border-t-rose-400/50";
+  return "border-t border-t-slate-700/40";
 }
 
 function timestampLabel(timestamp: string) {
