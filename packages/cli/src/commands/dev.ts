@@ -6,11 +6,14 @@ import { ServiceSession, type ServiceDefinition, type SessionEvent } from "@devd
 import { createSessionServer } from "@devdeck/server";
 
 import type { CommandIo } from "./init.js";
+import { clearSessionState, writeSessionState } from "../session-state.js";
 
 export type DevCommandOptions = {
   cwd?: string;
   io?: CommandIo;
   holdUntilSignal?: boolean;
+  port?: number;
+  onServerStarted?: () => Promise<void>;
 };
 
 export async function runDevCommand(options: DevCommandOptions = {}): Promise<void> {
@@ -27,12 +30,26 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<vo
   const stopController = createStopController();
   const server = createSessionServer({
     dashboardAssetsDirectory,
+    port: options.port,
     session,
     onStopSession: async () => {
       stopController.request("dashboard");
     },
   });
   const serverInfo = await server.start();
+  await writeSessionState({
+    cwd: loaded.directory,
+    session: {
+      version: 1,
+      project: loaded.config.project,
+      configPath: loaded.path,
+      url: serverInfo.url,
+      port: serverInfo.port,
+      pid: process.pid,
+      startedAt: session.startedAt,
+    },
+  });
+  await options.onServerStarted?.();
 
   session.subscribe((event) => handleSessionEvent(event, io));
   io.stdout(`Project: ${loaded.config.project}\n`);
@@ -56,6 +73,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<vo
     await new Promise((resolve) => setTimeout(resolve, 100));
     await session.stopAll();
     await server.stop();
+    await clearSessionState(loaded.directory);
     return;
   }
 
@@ -63,6 +81,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<vo
   await waitForStopRequest(io, stopController);
   await session.stopAll();
   await server.stop();
+  await clearSessionState(loaded.directory);
 }
 
 const defaultIo: CommandIo = {

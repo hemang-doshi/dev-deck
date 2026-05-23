@@ -1,22 +1,25 @@
-# DevDeck Documentation
+# Agent DevDeck Documentation
 
-Welcome to the DevDeck documentation hub! Here you will find detailed guides on how to install, configure, operate, and contribute to DevDeck.
+This documentation hub covers the existing `devdeck` binary and config format, plus the agent-first command surface.
 
 ---
 
 ## Guide Index
 
-### 🚀 [Getting Started](file:///Users/hemangdoshi/Developer/dev-deck/Docs/getting-started.md)
-Learn about prerequisites, global and local installation workflows, generating configurations, and launching your first dashboard.
+### [Getting Started](getting-started.md)
+Install the tool, create `devdeck.yml`, start a session, and use the main CLI commands.
 
-### ⚙️ [Configuration Reference](file:///Users/hemangdoshi/Developer/dev-deck/Docs/configuration.md)
-Detailed API and property schema specifications for `devdeck.yml`. Includes descriptions, types, validation rules, and full configuration examples.
+### [Agent CLI](agent-cli.md)
+Understand the bounded agent commands, runtime session discovery, and default local URLs.
 
-### 🎨 [Dashboard User Guide](file:///Users/hemangdoshi/Developer/dev-deck/Docs/dashboard.md)
-Learn how to interact with the responsive dashboard grid, resize tiles, customize themes, control process operations, filter logs, and use the single-click debug context handoff feature.
+### [Configuration Reference](configuration.md)
+Detailed schema specifications for `devdeck.yml`, with validation rules and examples.
 
-### 🛠️ [Architecture & Design](file:///Users/hemangdoshi/Developer/dev-deck/Docs/architecture.md)
-Under-the-hood details of DevDeck's multi-package monorepo structure. Learn how the process runner, log buffer, WebSocket server, and static frontend communicate.
+### [Dashboard User Guide](dashboard.md)
+Learn how to interact with the current local dashboard and manual inspection flow.
 
-### 🔍 [Troubleshooting Guide](file:///Users/hemangdoshi/Developer/dev-deck/Docs/troubleshooting.md)
-Solutions and workarounds for common issues like port conflicts, missing directory mappings, command execution failures, and WebSocket connection drops.
+### [Architecture & Design](architecture.md)
+See how the CLI, core runner, HTTP server, WebSocket broker, and dashboard fit together.
+
+### [Troubleshooting Guide](troubleshooting.md)
+Solutions and workarounds for port conflicts, command failures, and local connectivity issues.

@@ -1,6 +1,6 @@
-# Architecture & Internal Design
+# Agent DevDeck Architecture
 
-DevDeck is designed to be lightweight, fast, and local-first. It relies on monorepo package orchestration to compile and serve a static-exported React dashboard fed by local child process streams.
+Agent DevDeck is designed to be lightweight, local-first, and useful to both humans and agents. The same running session serves a browser dashboard and a bounded CLI control surface.
 
 ---
 
@@ -13,7 +13,7 @@ dev-deck/
 ├── apps/
 │   └── dashboard/          # Next.js static-exported React dashboard
 └── packages/
-    ├── cli/                # Command line entry points (init, dev)
+    ├── cli/                # Command line entry points (init, dev, agent, status, logs)
     ├── config/             # YAML parsing, validation, and error types
     ├── core/               # Process runner, ring buffer log parser, session context
     └── server/             # Express HTTP router, WebSocket live log broker
@@ -24,7 +24,11 @@ dev-deck/
 ## 2. Component Layers
 
 ### CLI Package (`@devdeck/cli`)
-The CLI is the main package developers execute. It handles command argument parsing, local server port allocation, configuration loading, and graceful process shutdown signals (`SIGINT`, `SIGTERM`).
+The CLI is the main package both humans and local agents execute. It handles:
+- Config bootstrap with `devdeck init`
+- Foreground session startup with `devdeck dev`
+- Runtime session discovery through `.devdeck/session.json`
+- Agent-facing status, logs, snapshot, and service control commands
 
 ### Config Package (`@devdeck/config`)
 Responsible for finding, reading, parsing, and validating `devdeck.yml`. It ensures service paths exist and checks for configuration duplicates or malformed fields, throwing descriptive user-facing warnings on failure.
@@ -37,9 +41,9 @@ The engine of the service runner:
 - **Debug Context:** Structures a complete diagnostic snapshot (status, active ports, crash codes, surrounding logs) format ready to be copied.
 
 ### Server Package (`@devdeck/server`)
-A fast, lightweight Express server that:
+A fast, lightweight Node HTTP server that:
 - Hosts the compiled, statically exported React frontend assets.
-- Serves HTTP REST endpoints to export sessions or perform actions (start/stop/restart a service).
+- Serves HTTP endpoints for `snapshot`, `logs`, `export`, and start/stop/restart actions.
 - Hosts a WebSocket server to stream real-time JSON log frames to active browser clients.
 
 ### Dashboard App (`@devdeck/dashboard`)
@@ -65,17 +69,20 @@ sequenceDiagram
 
     User->>CLI: devdeck dev
     CLI->>Core Runner: load config & spawn child processes
-    CLI->>WS Server: start server (default port 4545)
+    CLI->>WS Server: start local server (default port 4545)
+    CLI->>CLI: write .devdeck/session.json
     Core Runner->>WS Server: pipe stdout/stderr logs
     WS Server->>React Dashboard: stream JSON frame via WebSocket
-    React Dashboard->>User: render log grid in real-time
+    User->>CLI: devdeck status / logs / snapshot
+    CLI->>WS Server: query local HTTP endpoints
+    React Dashboard->>User: render live session state
 ```
 
 ---
 
 ## 4. Resource Allocation & Bounded Limits
 
-DevDeck runs entirely on your local machine with minimal CPU and RAM overhead:
-- **In-Memory Buffering:** DevDeck limits active logs memory consumption by storing only the latest 1000 lines per service in memory. Older logs are discarded.
+Agent DevDeck runs entirely on your local machine with minimal CPU and RAM overhead:
+- **In-Memory Buffering:** DevDeck stores a bounded recent log buffer in memory and discards older lines.
 - **TCP Health Polling:** Port health checks run on a lightweight periodic timer to avoid network socket exhaustion.
 - **Orphan Process Prevention:** On CLI shutdown, DevDeck executes a tree-kill clean-up to ensure background processes started by DevDeck do not remain as zombie processes.

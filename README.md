@@ -1,28 +1,28 @@
-# <img src="assets/icon.png" width="48" height="48" valign="middle" /> DevDeck
+# <img src="assets/icon.png" width="48" height="48" valign="middle" /> Agent DevDeck
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-**DevDeck** is a local-first developer session cockpit designed to run multiple services, stream their logs in real-time, and inspect application state from a beautiful, responsive grid dashboard.
+**Agent DevDeck** is a local-first agent control plane for starting, stopping, inspecting, and debugging multi-service local stacks through a bounded CLI and optional web dashboard.
 
-Instead of managing your frontend, backend, workers, queues, and container logs across scattered terminal tabs, DevDeck runs them native process trees, buffers output in-memory, and provides a polished grid workspace to manage your local stack.
+Instead of scattering local orchestration across shell history, terminal tabs, and ad hoc scripts, Agent DevDeck runs native process trees, exposes targeted session state and logs through lightweight local HTTP endpoints, and keeps the dashboard available for manual inspection when you want it.
 
 ---
 
-## ✨ Features
+## Features
 
-- **🚀 Service Orchestration:** Launch and manage a multi-service stack with a single command.
-- **📡 Live Log Streams:** Real-time log broadcasting directly to your browser via lightweight WebSockets.
-- **🎨 Interactive Grid Dashboard:** Custom sizing, drag-and-drop ordering, and color-coded cards (Slate, Sky, Mint, Amber, Rose) with glow borders.
-- **📋 Single-Click Handoff:** Copy the entire session debug context (healthy/error services, status, ports, recent logs) perfectly formatted for GitHub issues or AI agent coding prompts.
-- **🔒 Local-First:** 100% private. No external accounts, no cloud dependencies, no remote log shipping.
+- **Agent CLI control:** Start a local stack once with `devdeck dev`, then query state with `devdeck status`, `devdeck logs`, and `devdeck snapshot`.
+- **Bounded debugging surface:** Service actions and log inspection stay local, concise, and token-efficient.
+- **Service orchestration:** Launch and manage a multi-service stack with a single config file and foreground runner.
+- **Live dashboard:** Stream logs into the local dashboard for manual inspection when a browser view is useful.
+- **Local-first:** No accounts, no cloud relay, no remote log shipping.
 
 ---
 
 ## 🚀 Quick Start
 
 ### 1. Installation
-Install DevDeck globally or run from local source:
+Install `devdeck` globally or run from local source:
 ```bash
 npm install -g devdeck
 ```
@@ -43,24 +43,34 @@ services:
     group: web
 ```
 
-### 3. Run DevDeck
-Launch your service orchestra and spin up the dashboard:
+### 3. Start Agent DevDeck
+Launch the session runner and local dashboard server:
 ```bash
 devdeck dev
 ```
-Open **`http://127.0.0.1:4545`** to view your interactive dev cockpit!
+
+Then use the bounded agent commands:
+
+```bash
+devdeck status
+devdeck logs api --tail 80
+devdeck snapshot
+```
+
+Open **`http://127.0.0.1:4545`** when you want the local dashboard view.
 
 ---
 
 ## 📚 Documentation
 
-For complete reference guides, architecture layout, and setup guides, please explore the [Docs/](file:///Users/hemangdoshi/Developer/dev-deck/Docs/README.md) folder:
+For complete reference guides, architecture layout, and setup guides, please explore the [Docs/](Docs/README.md) folder:
 
-- 🚀 [Getting Started](file:///Users/hemangdoshi/Developer/dev-deck/Docs/getting-started.md) — Detailed installation, execution, and CLI command reference.
-- ⚙️ [Configuration Reference](file:///Users/hemangdoshi/Developer/dev-deck/Docs/configuration.md) — complete specifications for `devdeck.yml` property syntax.
-- 🎨 [Dashboard User Guide](file:///Users/hemangdoshi/Developer/dev-deck/Docs/dashboard.md) — How to manage service states, themes, grid controls, and search filters.
-- 🛠️ [Architecture & Internals](file:///Users/hemangdoshi/Developer/dev-deck/Docs/architecture.md) — package structures, circular buffers, log processing workflow.
-- 🔍 [Troubleshooting & FAQs](file:///Users/hemangdoshi/Developer/dev-deck/Docs/troubleshooting.md) — Port conflicts, exit codes, zombie processes, and connection solutions.
+- [Getting Started](Docs/getting-started.md) - installation, execution, and CLI reference.
+- [Agent CLI](Docs/agent-cli.md) - bounded agent commands, session discovery, and runtime behavior.
+- [Configuration Reference](Docs/configuration.md) - `devdeck.yml` schema and examples.
+- [Dashboard User Guide](Docs/dashboard.md) - local dashboard behavior and controls.
+- [Architecture & Internals](Docs/architecture.md) - package structure and runtime data flow.
+- [Troubleshooting & FAQs](Docs/troubleshooting.md) - common local issues and fixes.
 
 ---
 
