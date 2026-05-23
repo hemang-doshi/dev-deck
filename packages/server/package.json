@@ -1,0 +1,10 @@
+{
+  "name": "@devdeck/server",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"console.log('build @devdeck/server placeholder')\"",
+    "test": "node -e \"console.log('test @devdeck/server placeholder')\"",
+    "lint": "node -e \"console.log('lint @devdeck/server placeholder')\""
+  }
+}

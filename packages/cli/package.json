@@ -1,0 +1,13 @@
+{
+  "name": "@devdeck/cli",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "devdeck": "dist/index.js"
+  },
+  "scripts": {
+    "build": "node -e \"console.log('build @devdeck/cli placeholder')\"",
+    "test": "node -e \"console.log('test @devdeck/cli placeholder')\"",
+    "lint": "node -e \"console.log('lint @devdeck/cli placeholder')\""
+  }
+}

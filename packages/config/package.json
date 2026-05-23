@@ -1,0 +1,10 @@
+{
+  "name": "@devdeck/config",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"console.log('build @devdeck/config placeholder')\"",
+    "test": "node -e \"console.log('test @devdeck/config placeholder')\"",
+    "lint": "node -e \"console.log('lint @devdeck/config placeholder')\""
+  }
+}
