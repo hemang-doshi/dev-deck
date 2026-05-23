@@ -1,4 +1,5 @@
 import type { LogSeverity, SessionSnapshot } from "@devdeck/core";
+import { DevdeckError } from "@devdeck/config";
 import { getLogs, getSnapshot, postAction, type AgentClientOptions } from "../agent-client.js";
 import { formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
 import type { CommandIo } from "./init.js";
@@ -126,15 +127,23 @@ export async function runStopCommand(
   options: SessionCommandOptions = {},
 ): Promise<void> {
   const flags = parseCommonFlags(args);
-  await postAction(
-    { action: "stop-session" },
-    {
-      cwd: options.cwd,
-      fetchImplementation: options.fetchImplementation,
-      url: flags.url,
-    },
-  );
-  writeOutput(options.io, "Requested stop-session\n");
+  try {
+    await postAction(
+      { action: "stop-session" },
+      {
+        cwd: options.cwd,
+        fetchImplementation: options.fetchImplementation,
+        url: flags.url,
+      },
+    );
+    writeOutput(options.io, "Requested stop-session\n");
+  } catch (error) {
+    if (error instanceof DevdeckError && error.code === "DD-ERR-0012") {
+      writeOutput(options.io, "DevDeck session is already stopped.\n");
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function runServiceCommand(

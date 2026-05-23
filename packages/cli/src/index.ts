@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import { ConfigError } from "@devdeck/config";
+import { DevdeckError } from "@devdeck/config";
 
 import { runAgentCommand } from "./commands/agent.js";
 import { runDevCommand } from "./commands/dev.js";
+import { runStartCommand } from "./commands/start.js";
 import { runInitCommand } from "./commands/init.js";
 import {
   runLogsCommand,
@@ -14,7 +15,7 @@ import {
 } from "./commands/session.js";
 import type { CommandIo } from "./commands/init.js";
 
-type CommandName = "init" | "dev" | "agent" | "status" | "logs" | "snapshot" | "stop" | "service";
+type CommandName = "init" | "dev" | "start" | "agent" | "status" | "logs" | "snapshot" | "stop" | "service";
 
 export type RunCliOptions = {
   cwd?: string;
@@ -27,7 +28,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   const io = options.io ?? defaultIo;
 
   if (!command) {
-    io.stderr("Usage: devdeck <init|dev|agent|status|logs|snapshot|stop|service>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service>\n");
     return 1;
   }
 
@@ -43,6 +44,16 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     if (command === "dev") {
       const parsed = parseDevArgs(argv.slice(1));
       await runDevCommand({
+        cwd: options.cwd,
+        io,
+        port: parsed.port,
+      });
+      return 0;
+    }
+
+    if (command === "start") {
+      const parsed = parseDevArgs(argv.slice(1));
+      await runStartCommand({
         cwd: options.cwd,
         io,
         port: parsed.port,
@@ -101,15 +112,23 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     }
 
     io.stderr(`Unknown command: ${command}\n`);
-    io.stderr("Usage: devdeck <init|dev|agent|status|logs|snapshot|stop|service>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service>\n");
     return 1;
   } catch (error) {
-    if (error instanceof ConfigError || error instanceof Error) {
-      io.stderr(`${error.message}\n`);
+    if (error instanceof DevdeckError) {
+      io.stderr(`[${error.code}] ${error.message}\n`);
+      if (error.hint) {
+        io.stderr(`Hint: ${error.hint}\n`);
+      }
       return 1;
     }
 
-    io.stderr("Unexpected error\n");
+    if (error instanceof Error) {
+      io.stderr(`[DD-ERR-9999] Unexpected error: ${error.message}\n`);
+      return 1;
+    }
+
+    io.stderr("[DD-ERR-9999] Unexpected error\n");
     return 1;
   }
 }

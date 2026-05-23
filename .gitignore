@@ -28,3 +28,7 @@ Docs/superpowers/
 .env.local
 .env.*.local
 
+# Local DevDeck session and configuration
+.devdeck/
+devdeck.yml
+

@@ -11,7 +11,7 @@
     "lint": "npm --prefix ../.. run build --workspace @devdeck/core && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@devdeck/core": "1.0.0",
+    "@devdeck/core": "1.1.0",
     "ws": "^8.18.3"
   }
 }

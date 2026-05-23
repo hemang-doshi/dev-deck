@@ -1,7 +1,7 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-import { loadDevdeckConfig } from "@devdeck/config";
+import { loadDevdeckConfig, DevdeckError } from "@devdeck/config";
 import { ServiceSession, type ServiceDefinition, type SessionEvent } from "@devdeck/core";
 import { createSessionServer } from "@devdeck/server";
 
@@ -36,7 +36,25 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<vo
       stopController.request("dashboard");
     },
   });
-  const serverInfo = await server.start();
+  
+  let serverInfo;
+  try {
+    serverInfo = await server.start();
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes("EADDRINUSE")) {
+      throw new DevdeckError(
+        "DD-ERR-0010",
+        `Port ${options.port ?? 4545} is already in use.`,
+        "Specify a different port using '--port <number>', or stop the process currently running on that port."
+      );
+    }
+    throw new DevdeckError(
+      "DD-ERR-0015",
+      `Failed to start session server: ${msg}`,
+      "Ensure you have network permissions and the port is free."
+    );
+  }
   await writeSessionState({
     cwd: loaded.directory,
     session: {
@@ -116,22 +134,38 @@ function handleSessionEvent(event: SessionEvent, io: CommandIo): void {
     return;
   }
 
-  io.stdout(`[${event.service.name}] ${event.service.status}\n`);
+  io.stdout(`[${event.service.name}] Status changed: ${event.service.status.toUpperCase()}\n`);
+  if (event.service.status === "error" && event.service.lastError) {
+    io.stderr(`[DD-ERR-0011] Service '${event.service.name}' failed to run: ${event.service.lastError}\n`);
+    io.stderr(`Hint: Check config command syntax in devdeck.yml, verify dependencies are installed, or run 'devdeck logs ${event.service.name}' for full process output.\n`);
+  }
+  if (event.service.status === "exited" && event.service.lastExitCode !== null && event.service.lastExitCode !== 0) {
+    io.stderr(`[DD-ERR-0011] Service '${event.service.name}' exited with non-zero code ${event.service.lastExitCode}\n`);
+    io.stderr(`Hint: Run 'devdeck logs ${event.service.name}' to see why the process crashed.\n`);
+  }
 }
 
 async function resolveDashboardAssetsDirectory(): Promise<string> {
-  const exportDirectory = path.resolve(
-    new URL("../../../../apps/dashboard/out", import.meta.url).pathname,
+  const prodDirectory = path.resolve(
+    new URL("../dashboard", import.meta.url).pathname,
   );
-  const fallbackDirectory = path.resolve(
-    new URL("../../../../apps/dashboard/static", import.meta.url).pathname,
+  const devDirectory = path.resolve(
+    new URL("../../../../apps/dashboard/out", import.meta.url).pathname,
   );
 
   try {
-    await access(exportDirectory);
-    return exportDirectory;
+    await access(prodDirectory);
+    return prodDirectory;
   } catch {
-    return fallbackDirectory;
+    try {
+      await access(devDirectory);
+      return devDirectory;
+    } catch {
+      const fallbackDirectory = path.resolve(
+        new URL("../../../../apps/dashboard/static", import.meta.url).pathname,
+      );
+      return fallbackDirectory;
+    }
   }
 }
 

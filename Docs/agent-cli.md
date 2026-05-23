@@ -13,7 +13,9 @@ Agent DevDeck keeps the existing `devdeck` binary and `devdeck.yml` config forma
 
 ```bash
 devdeck agent setup
-devdeck status [--json] [--url http://127.0.0.1:4545]
+devdeck dev [--port PORT]
+devdeck start [--port PORT]
+devdeck status [--json] [--url URL]
 devdeck logs [service] [--tail 80] [--severity info|warning|error] [--grep text] [--json] [--url URL]
 devdeck snapshot [--tail 120] [--json] [--url URL]
 devdeck stop [--url URL]
