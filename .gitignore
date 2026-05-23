@@ -18,6 +18,7 @@ AGENTS.md
 # Claude Flow runtime data
 .claude-flow/data/
 .claude-flow/logs/
+.worktrees/
 
 # Environment variables
 .env
