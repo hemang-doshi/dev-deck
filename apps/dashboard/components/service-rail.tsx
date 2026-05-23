@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AlertCircle, Play, RefreshCw, ServerCog, Square, Wifi, WifiOff } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -80,67 +81,82 @@ export function ServiceRail(props: ServiceRailProps) {
             </Empty>
           ) : null}
 
-          {props.services.map((service) => {
-            const active = props.selectedService === service.name;
-            const unhealthy =
-              service.health === "unreachable" || service.status === "error" || service.status === "exited";
+          <AnimatePresence mode="popLayout">
+            {props.services.map((service) => {
+              const active = props.selectedService === service.name;
+              const unhealthy =
+                service.health === "unreachable" || service.status === "error" || service.status === "exited";
 
-            return (
-              <div
-                key={service.name}
-                className={cn(
-                  "rounded-2xl border px-3 py-2 text-left transition-all",
-                  active
-                    ? "border-slate-900/10 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.12)]"
-                    : "border-white/70 bg-white/70 hover:bg-white",
-                )}
-              >
-                <button className="w-full text-left" onClick={() => props.onSelectService(service.name)} type="button">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium text-slate-950">{service.name}</span>
-                        {service.group ? (
-                          <Badge variant="outline" className="rounded-full bg-white/80 px-2 py-0 text-[10px]">
-                            {service.group}
+              return (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                  key={service.name}
+                  className={cn(
+                    "rounded-2xl border px-3 py-2 text-left transition-colors duration-300",
+                    active
+                      ? "border-slate-900/10 bg-white shadow-[0_16px_35px_rgba(15,23,42,0.12)]"
+                      : "border-white/70 bg-white/70 hover:bg-white",
+                  )}
+                >
+                  <button className="w-full text-left" onClick={() => props.onSelectService(service.name)} type="button">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-medium text-slate-950">{service.name}</span>
+                          {service.group ? (
+                            <Badge variant="outline" className="rounded-full bg-white/80 px-2 py-0 text-[10px]">
+                              {service.group}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                          <span className="flex items-center gap-1">
+                            {service.health === "healthy" ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
+                            {service.health}
+                          </span>
+                          {service.port ? <span>:{service.port}</span> : null}
+                          {service.restartCount > 0 ? <span>r{service.restartCount}</span> : null}
+                        </div>
+                      </div>
+                      <Badge className={cn("rounded-full px-2.5", statusBadgeClass(service.status))}>
+                        {service.status}
+                      </Badge>
+                    </div>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {active && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
+                        className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3 overflow-hidden"
+                      >
+                        <ActionButton label="Start" onClick={() => props.onStart(service.name)} icon={<Play className="size-3.5" />} />
+                        <ActionButton label="Stop" onClick={() => props.onStop(service.name)} icon={<Square className="size-3.5" />} />
+                        <ActionButton label="Restart" onClick={() => props.onRestart(service.name)} icon={<RefreshCw className="size-3.5" />} />
+                        {service.lastError ? (
+                          <span className="ml-auto max-w-[10rem] truncate text-[11px] text-amber-700">
+                            {service.lastError}
+                          </span>
+                        ) : unhealthy ? (
+                          <Badge variant="outline" className="ml-auto rounded-full border-amber-300 bg-amber-50 px-2.5 text-amber-700">
+                            <AlertCircle className="size-3" />
+                            Needs attention
                           </Badge>
                         ) : null}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                        <span className="flex items-center gap-1">
-                          {service.health === "healthy" ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}
-                          {service.health}
-                        </span>
-                        {service.port ? <span>:{service.port}</span> : null}
-                        {service.restartCount > 0 ? <span>r{service.restartCount}</span> : null}
-                      </div>
-                    </div>
-                    <Badge className={cn("rounded-full px-2.5", statusBadgeClass(service.status))}>
-                      {service.status}
-                    </Badge>
-                  </div>
-                </button>
-
-                {active ? (
-                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-3">
-                    <ActionButton label="Start" onClick={() => props.onStart(service.name)} icon={<Play className="size-3.5" />} />
-                    <ActionButton label="Stop" onClick={() => props.onStop(service.name)} icon={<Square className="size-3.5" />} />
-                    <ActionButton label="Restart" onClick={() => props.onRestart(service.name)} icon={<RefreshCw className="size-3.5" />} />
-                    {service.lastError ? (
-                      <span className="ml-auto max-w-[10rem] truncate text-[11px] text-amber-700">
-                        {service.lastError}
-                      </span>
-                    ) : unhealthy ? (
-                      <Badge variant="outline" className="ml-auto rounded-full border-amber-300 bg-amber-50 px-2.5 text-amber-700">
-                        <AlertCircle className="size-3" />
-                        Needs attention
-                      </Badge>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </CardContent>
       </Card>
     </aside>

@@ -13,10 +13,10 @@
 ## Assumptions And Constraints
 
 - The current folder becomes the implementation repo.
-- Existing [`Docs/`](/Users/hemangdoshi/Developer/dev-deck/Docs) files remain source specs.
-- New planning artifacts live under [`docs/superpowers/plans/`](/Users/hemangdoshi/Developer/dev-deck/docs/superpowers/plans).
+- Existing [`Docs/`](../../Docs) files remain source specs.
+- New planning artifacts live under [`docs/superpowers/plans/`](superpowers/plans).
 - macOS and Linux are the only MVP support targets.
-- The user’s latest decision overrides the older Vite recommendation in [`Docs/docs_04_technical_architecture_devdeck.md`](/Users/hemangdoshi/Developer/dev-deck/Docs/docs_04_technical_architecture_devdeck.md): `apps/dashboard` uses Next.js static export.
+- The user’s latest decision overrides the older Vite recommendation in [`Docs/docs_04_technical_architecture_devdeck.md`](../../Docs/docs_04_technical_architecture_devdeck.md): `apps/dashboard` uses Next.js static export.
 - This is the master plan. Before coding each phase, write a short executable phase plan with task-level TDD steps if the phase has meaningful implementation breadth.
 
 ## Success Criteria
@@ -27,7 +27,7 @@
 - Dashboard reconnect shows current session state and recent logs without needing persistence.
 - Service start, stop, restart, and whole-session stop work reliably.
 - Export produces current-session logs plus debug context on demand.
-- Core flows from [`Docs/docs_03_user_flows_and_screens_devdeck.md`](/Users/hemangdoshi/Developer/dev-deck/Docs/docs_03_user_flows_and_screens_devdeck.md) are covered by automated and manual verification.
+- Core flows from [`Docs/docs_03_user_flows_and_screens_devdeck.md`](../../Docs/docs_03_user_flows_and_screens_devdeck.md) are covered by automated and manual verification.
 
 ## Proposed File Structure
 
