@@ -156,6 +156,92 @@ describe("createSessionServer", () => {
 
     await server.stop();
   });
+
+  it("serves snapshot and filtered logs for agent queries", async () => {
+    const workspaceDirectory = await createWorkspace(tempDirectories);
+    const session = new ServiceSession({
+      project: "sample",
+      services: [
+        {
+          name: "api",
+          command:
+            "node -e \"console.log('boot complete'); console.error('Database ERROR'); console.log('trace user=alice'); setTimeout(() => process.exit(0), 20)\"",
+          cwd: workspaceDirectory,
+        },
+      ],
+      maxLogLines: 10,
+    });
+    const server = createSessionServer({
+      dashboardAssetsDirectory: workspaceDirectory,
+      session,
+      port: 0,
+    });
+    const { port } = await server.start();
+
+    await session.startAll();
+    await waitFor(() => session.getSnapshot().logs.length >= 3);
+
+    const snapshotResponse = await fetch(`http://127.0.0.1:${port}/api/snapshot`);
+    const serviceLogsResponse = await fetch(`http://127.0.0.1:${port}/api/logs?service=api`);
+    const errorLogsResponse = await fetch(
+      `http://127.0.0.1:${port}/api/logs?severity=error`,
+    );
+    const grepLogsResponse = await fetch(`http://127.0.0.1:${port}/api/logs?grep=ALICE`);
+
+    const snapshot = await snapshotResponse.json();
+    const serviceLogs = await serviceLogsResponse.json();
+    const errorLogs = await errorLogsResponse.json();
+    const grepLogs = await grepLogsResponse.json();
+
+    expect(snapshot.project).toBe("sample");
+    expect(snapshot.logs).toHaveLength(3);
+    expect(serviceLogs.totalMatched).toBe(3);
+    expect(serviceLogs.returned).toBe(3);
+    expect(errorLogs.logs).toHaveLength(1);
+    expect(errorLogs.logs[0]?.line).toContain("Database ERROR");
+    expect(grepLogs.logs).toHaveLength(1);
+    expect(grepLogs.logs[0]?.line).toContain("user=alice");
+
+    await server.stop();
+  });
+
+  it("bounds log tails and rejects invalid log query params", async () => {
+    const workspaceDirectory = await createWorkspace(tempDirectories);
+    const session = new ServiceSession({
+      project: "sample",
+      services: [
+        {
+          name: "web",
+          command:
+            "node -e \"console.log('line-1'); console.log('line-2'); console.log('line-3'); setTimeout(() => process.exit(0), 20)\"",
+          cwd: workspaceDirectory,
+        },
+      ],
+      maxLogLines: 10,
+    });
+    const server = createSessionServer({
+      dashboardAssetsDirectory: workspaceDirectory,
+      session,
+      port: 0,
+    });
+    const { port } = await server.start();
+
+    await session.startAll();
+    await waitFor(() => session.getSnapshot().logs.length >= 3);
+
+    const tailResponse = await fetch(`http://127.0.0.1:${port}/api/logs?tail=2`);
+    const invalidTailResponse = await fetch(`http://127.0.0.1:${port}/api/logs?tail=0`);
+
+    const tailBody = await tailResponse.json();
+    const invalidTailBody = await invalidTailResponse.json();
+
+    expect(tailBody.returned).toBe(2);
+    expect(tailBody.logs.map((log: { line: string }) => log.line)).toEqual(["line-2", "line-3"]);
+    expect(invalidTailResponse.status).toBe(400);
+    expect(invalidTailBody.error).toContain("tail");
+
+    await server.stop();
+  });
 });
 
 async function createWorkspace(tempDirectories: string[]): Promise<string> {
