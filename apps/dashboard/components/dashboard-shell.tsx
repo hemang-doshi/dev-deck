@@ -555,11 +555,3 @@ function tileCardColorClass(color: WorkspaceTile["color"]): string {
   if (color === "rose") return "bg-rose-100/70 border-rose-300/60 shadow-[0_20px_50px_rgba(244,63,94,0.08)] text-rose-950";
   return "bg-white/72 border-white/70 shadow-[0_20px_50px_rgba(15,23,42,0.08)] text-slate-950";
 }
-
-function tileBadgeClass(color: WorkspaceTile["color"]): string {
-  if (color === "sky") return "bg-sky-500 text-white";
-  if (color === "mint") return "bg-emerald-500 text-white";
-  if (color === "amber") return "bg-amber-500 text-white";
-  if (color === "rose") return "bg-rose-500 text-white";
-  return "bg-slate-900 text-white";
-}
