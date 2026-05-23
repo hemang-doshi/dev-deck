@@ -2,9 +2,15 @@
   "name": "@devdeck/config",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node -e \"console.log('build @devdeck/config placeholder')\"",
-    "test": "node -e \"console.log('test @devdeck/config placeholder')\"",
-    "lint": "node -e \"console.log('lint @devdeck/config placeholder')\""
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1"
   }
 }

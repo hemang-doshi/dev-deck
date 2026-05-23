@@ -2,9 +2,23 @@
   "name": "@devdeck/dashboard",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "node -e \"console.log('build @devdeck/dashboard placeholder')\"",
-    "test": "node -e \"console.log('test @devdeck/dashboard placeholder')\"",
-    "lint": "node -e \"console.log('lint @devdeck/dashboard placeholder')\""
+    "build": "npm --prefix ../.. run build --workspace @devdeck/core && next build",
+    "test": "npm --prefix ../.. run build --workspace @devdeck/core && vitest run",
+    "lint": "npm --prefix ../.. run build --workspace @devdeck/core && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@devdeck/core": "0.0.0",
+    "next": "^16.0.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "19.2.15",
+    "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "^27.2.0"
   }
 }
