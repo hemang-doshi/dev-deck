@@ -2,12 +2,20 @@
   "name": "@devdeck/cli",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "devdeck": "dist/index.js"
   },
   "scripts": {
-    "build": "node -e \"console.log('build @devdeck/cli placeholder')\"",
-    "test": "node -e \"console.log('test @devdeck/cli placeholder')\"",
-    "lint": "node -e \"console.log('lint @devdeck/cli placeholder')\""
+    "build": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && tsc -p tsconfig.json",
+    "test": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && vitest run",
+    "lint": "npm --prefix ../.. run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@devdeck/config": "0.0.0",
+    "@devdeck/core": "0.0.0",
+    "@devdeck/server": "0.0.0"
   }
 }

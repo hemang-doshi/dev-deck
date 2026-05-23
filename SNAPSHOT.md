@@ -9,33 +9,35 @@
   - [`SNAPSHOT.md`](/Users/hemangdoshi/Developer/dev-deck/SNAPSHOT.md)
   - [`DIFF_CHANGES.md`](/Users/hemangdoshi/Developer/dev-deck/DIFF_CHANGES.md)
 
-## Implemented Baseline
+## Implemented MVP
 
-- Root workspace scaffold created:
-  - [`package.json`](/Users/hemangdoshi/Developer/dev-deck/package.json)
-  - [`package-lock.json`](/Users/hemangdoshi/Developer/dev-deck/package-lock.json)
-  - [`tsconfig.base.json`](/Users/hemangdoshi/Developer/dev-deck/tsconfig.base.json)
-  - [`.gitignore`](/Users/hemangdoshi/Developer/dev-deck/.gitignore)
-  - [`README.md`](/Users/hemangdoshi/Developer/dev-deck/README.md)
-- Workspace package boundaries created:
-  - [`apps/dashboard/package.json`](/Users/hemangdoshi/Developer/dev-deck/apps/dashboard/package.json)
-  - [`packages/cli/package.json`](/Users/hemangdoshi/Developer/dev-deck/packages/cli/package.json)
-  - [`packages/config/package.json`](/Users/hemangdoshi/Developer/dev-deck/packages/config/package.json)
-  - [`packages/core/package.json`](/Users/hemangdoshi/Developer/dev-deck/packages/core/package.json)
-  - [`packages/server/package.json`](/Users/hemangdoshi/Developer/dev-deck/packages/server/package.json)
-- Example shell created:
-  - [`examples/fullstack-basic/README.md`](/Users/hemangdoshi/Developer/dev-deck/examples/fullstack-basic/README.md)
-- Phase execution artifact created:
-  - [`docs/superpowers/plans/2026-05-23-devdeck-phase-1-plan.md`](/Users/hemangdoshi/Developer/dev-deck/docs/superpowers/plans/2026-05-23-devdeck-phase-1-plan.md)
+- `@devdeck/config`
+  - config discovery, YAML parsing, validation, and readable errors
+- `@devdeck/core`
+  - process runner, bounded log buffer, session state, log classification, debug context, and session export formatting
+- `@devdeck/server`
+  - local HTTP/WebSocket session server, action routes, export route, asset serving, and port health monitoring
+- `@devdeck/cli`
+  - `init` starter config generation and `dev` runtime orchestration with clean shutdown
+- `@devdeck/dashboard`
+  - static-exported Next.js dashboard with live session stream, service controls, filters, reconnect handling, copy/export actions, and debug context
+- `examples/fullstack-basic`
+  - self-contained demo stack with healthy, warning, and intentional error flows
 
-## Verified Baseline
+## Verified State
 
-- `npm install` succeeds.
-- `npm run build` succeeds across all workspaces using placeholder scripts.
-- `npm run test` succeeds across all workspaces using placeholder scripts.
+- `npm pack --workspaces` succeeds and produces sane tarballs.
+- `npm run build` succeeds across all workspaces.
+- `npm run test` succeeds across all workspaces.
+- Manual CLI verification passed for:
+  - `init`
+  - `dev`
+  - `/health`
+  - `/api/export`
+  - example stack startup and clean shutdown
 
 ## Current Planning Direction
 
 - Use the existing `Docs/` files as product and architecture source specs.
 - Treat the master MVP plan as the controlling execution document where it conflicts with older docs.
-- Continue phase-by-phase, replacing placeholders with tested implementations.
+- Continue from the current MVP by hardening packaging, improving the dashboard UX, or preparing a preview release.

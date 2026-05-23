@@ -1,0 +1,42 @@
+:root {
+  --ink: #112218;
+  --muted: #637265;
+  --surface: rgba(255, 255, 255, 0.78);
+  --surface-strong: rgba(255, 255, 255, 0.92);
+  --line: rgba(17, 34, 24, 0.12);
+  --healthy: #1e7a44;
+  --warning: #a86612;
+  --error: #b42318;
+  --unknown: #6b7280;
+  --bg-start: #f8efe4;
+  --bg-end: #ecf5ed;
+  --shadow: 0 28px 80px rgba(17, 34, 24, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 36%),
+    linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+  color: var(--ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}

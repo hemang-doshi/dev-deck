@@ -4,3 +4,9 @@ dist/
 out/
 coverage/
 .DS_Store
+*.tgz
+
+DIFF_CHANGES.md
+SNAPSHOT.md
+.env
+.env.local

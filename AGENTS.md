@@ -60,7 +60,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## 6. Working Notes
 
-**GitIgnored**
+**These files must be Git Ignored**
 
 - Use 'SNAPSHOT.md' as a current code snapshot file.
 - Use 'DIFF_CHANGES.md' as a file for maintaining changes made since the last commit.
