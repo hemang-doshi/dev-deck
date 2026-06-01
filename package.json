@@ -6,9 +6,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace devdeck --workspace @devdeck/dashboard",
-    "test": "npm run test --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace devdeck --workspace @devdeck/dashboard",
-    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace devdeck --workspace @devdeck/dashboard"
+    "build": "npm run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
+    "test": "npm run test --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
+    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
