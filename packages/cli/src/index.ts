@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { DevdeckError } from "@devdeck/config";
 
 import { runAgentCommand } from "./commands/agent.js";
+import { runConfigCommand } from "./commands/config.js";
 import { runDevCommand } from "./commands/dev.js";
 import { runStartCommand } from "./commands/start.js";
 import { runInitCommand } from "./commands/init.js";
@@ -30,7 +34,8 @@ type CommandName =
   | "snapshot"
   | "stop"
   | "service"
-  | "session";
+  | "session"
+  | "config";
 
 export type RunCliOptions = {
   cwd?: string;
@@ -43,7 +48,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   const io = options.io ?? defaultIo;
 
   if (!command) {
-    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session|config>\n");
     return 1;
   }
 
@@ -144,9 +149,18 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         : 4;
     }
 
+    if (command === "config") {
+      return (await runConfigCommand(argv.slice(1), {
+        cwd: options.cwd,
+        io,
+      }))
+        ? 0
+        : 3;
+    }
+
     throw new CliUsageError(
       `Unknown command: ${command}`,
-      "Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session>",
+      "Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session|config>",
     );
   } catch (error) {
     if (jsonMode) {
@@ -317,7 +331,15 @@ const defaultIo: CommandIo = {
   stderr: (message) => process.stderr.write(message),
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+export function isCliEntrypoint(moduleUrl: string, argvPath: string | undefined): boolean {
+  if (!argvPath) {
+    return false;
+  }
+
+  return path.resolve(fileURLToPath(moduleUrl)) === path.resolve(argvPath);
+}
+
+if (isCliEntrypoint(import.meta.url, process.argv[1])) {
   const exitCode = await runCli(process.argv.slice(2));
   process.exit(exitCode);
 }
