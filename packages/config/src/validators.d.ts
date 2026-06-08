@@ -1,0 +1,11 @@
+export declare function isRecord(value: unknown): value is Record<string, unknown>;
+export declare function assertNonEmptyString(value: unknown, code: string, message: string, hint: string): string;
+export declare function assertOptionalNonEmptyString(value: unknown, code: string, message: string, hint: string): string | undefined;
+export declare function assertPositiveInteger(value: unknown, code: string, message: string, hint: string): number;
+export declare function assertOptionalPositiveInteger(value: unknown, code: string, message: string, hint: string): number | undefined;
+export declare function assertOptionalNonNegativeInteger(value: unknown, code: string, message: string, hint: string): number | undefined;
+export declare function assertStringArray(value: unknown, code: string, message: string, hint: string): string[];
+export declare function assertOptionalStringArray(value: unknown, code: string, message: string, hint: string): string[];
+export declare function assertHttpUrl(value: unknown, code: string, message: string, hint: string): string;
+export declare function assertUrl(value: unknown, code: string, message: string, hint: string): string;
+export declare function assertExpectedStatus(value: unknown, code: string, message: string, hint: string): number | undefined;

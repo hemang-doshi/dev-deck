@@ -1,7 +1,9 @@
-import { access, readFile, stat } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { isMap, parseDocument } from "yaml";
 import { ConfigError } from "./errors.js";
+import { normalizeConfig, validateRawConfig } from "./normalize-devdeck-config.js";
+import { validateDependencyGraph } from "./validate-dependency-graph.js";
 const CONFIG_FILE_NAME = "devdeck.yml";
 export async function findDevdeckConfigPath(startDirectory = process.cwd()) {
     let currentDirectory = path.resolve(startDirectory);
@@ -23,83 +25,26 @@ export async function findDevdeckConfigPath(startDirectory = process.cwd()) {
 export async function loadDevdeckConfig(startDirectory = process.cwd()) {
     const configPath = await findDevdeckConfigPath(startDirectory);
     if (!configPath) {
-        throw new ConfigError(`Could not find ${CONFIG_FILE_NAME} starting from ${path.resolve(startDirectory)}.`);
+        throw new ConfigError("DD-ERR-0001", `Could not find ${CONFIG_FILE_NAME} starting from ${path.resolve(startDirectory)}.`, "Run 'devdeck init' to create a starter devdeck.yml file in the current directory.");
     }
     const source = await readFile(configPath, "utf8");
     const document = parseDocument(source, { uniqueKeys: false });
     const duplicateServiceName = getDuplicateServiceName(document);
     if (duplicateServiceName) {
-        throw new ConfigError(`Duplicate service name "${duplicateServiceName}" found in ${configPath}.`);
+        throw new ConfigError("DD-ERR-0003", `Duplicate service name "${duplicateServiceName}" found in ${configPath}.`, "Ensure all service names under the 'services' key in devdeck.yml are unique.");
     }
     if (document.errors.length > 0) {
-        throw new ConfigError(`Invalid YAML in ${configPath}: ${document.errors[0]?.message ?? "parse failed"}`);
+        throw new ConfigError("DD-ERR-0002", `Invalid YAML in ${configPath}: ${document.errors[0]?.message ?? "parse failed"}`, "Fix the YAML syntax errors in devdeck.yml.");
     }
     const parsed = document.toJS();
     const directory = path.dirname(configPath);
-    const config = await validateConfig(parsed, directory, configPath);
+    const raw = validateRawConfig(parsed, configPath);
+    const config = await normalizeConfig(raw, directory, configPath);
+    validateDependencyGraph(config, configPath);
     return {
         path: configPath,
         directory,
         config,
-    };
-}
-async function validateConfig(parsed, directory, configPath) {
-    if (!isRecord(parsed)) {
-        throw new ConfigError(`Expected ${configPath} to contain a YAML object.`);
-    }
-    const project = parsed.project;
-    const services = parsed.services;
-    if (typeof project !== "string" || project.trim() === "") {
-        throw new ConfigError(`Expected "project" to be a non-empty string in ${configPath}.`);
-    }
-    if (!isRecord(services) || Object.keys(services).length === 0) {
-        throw new ConfigError(`Expected "services" to be a non-empty object in ${configPath}.`);
-    }
-    const validatedServices = {};
-    for (const [serviceName, rawService] of Object.entries(services)) {
-        validatedServices[serviceName] = await validateServiceConfig(serviceName, rawService, directory, configPath);
-    }
-    return {
-        project: project.trim(),
-        services: validatedServices,
-    };
-}
-async function validateServiceConfig(serviceName, rawService, directory, configPath) {
-    if (!isRecord(rawService)) {
-        throw new ConfigError(`Expected service "${serviceName}" to be an object in ${configPath}.`);
-    }
-    const command = rawService.command;
-    const cwd = rawService.cwd;
-    const group = rawService.group;
-    const port = rawService.port;
-    if (typeof command !== "string" || command.trim() === "") {
-        throw new ConfigError(`Expected service "${serviceName}" to define a non-empty "command" in ${configPath}.`);
-    }
-    if (typeof cwd !== "string" || cwd.trim() === "") {
-        throw new ConfigError(`Expected service "${serviceName}" to define a non-empty "cwd" in ${configPath}.`);
-    }
-    const resolvedCwd = path.resolve(directory, cwd);
-    let cwdStats;
-    try {
-        cwdStats = await stat(resolvedCwd);
-    }
-    catch {
-        throw new ConfigError(`Expected service "${serviceName}" cwd to exist: ${resolvedCwd}.`);
-    }
-    if (!cwdStats.isDirectory()) {
-        throw new ConfigError(`Expected service "${serviceName}" cwd to be a directory: ${resolvedCwd}.`);
-    }
-    if (group !== undefined && (typeof group !== "string" || group.trim() === "")) {
-        throw new ConfigError(`Expected service "${serviceName}" group to be a non-empty string in ${configPath}.`);
-    }
-    if (port !== undefined && (!Number.isInteger(port) || port <= 0)) {
-        throw new ConfigError(`Expected service "${serviceName}" port to be a positive integer in ${configPath}.`);
-    }
-    return {
-        command: command.trim(),
-        cwd,
-        ...(group === undefined ? {} : { group: group.trim() }),
-        ...(port === undefined ? {} : { port }),
     };
 }
 function getDuplicateServiceName(document) {
@@ -116,7 +61,4 @@ function getDuplicateServiceName(document) {
         seenServiceNames.add(serviceName);
     }
     return null;
-}
-function isRecord(value) {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
 }
