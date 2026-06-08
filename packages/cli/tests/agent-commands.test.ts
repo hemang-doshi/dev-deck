@@ -3,9 +3,19 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { runCli } from "../src/index.js";
+
+const spawnMock = vi.hoisted(() =>
+  vi.fn(() => ({
+    unref: vi.fn(),
+  })),
+);
+
+vi.mock("node:child_process", () => ({
+  spawn: spawnMock,
+}));
 
 describe("agent commands", () => {
   const tempDirectories: string[] = [];
@@ -164,6 +174,91 @@ describe("agent commands", () => {
     expect(stop.stderr).toBe("");
   });
 
+  it("maps json usage errors to stable cli usage responses", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["status", "--json", "--bogus"], workspaceDirectory);
+
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "status",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        severity: "error",
+        retryable: false,
+        message: "Unknown option: --bogus",
+      },
+    });
+    expect(result.stderr).toBe("");
+    expect(result.stdout).not.toContain("stack");
+  });
+
+  it("maps invalid logs json severity to stable cli usage responses", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["logs", "--json", "--severity", "nope"], workspaceDirectory);
+
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "logs",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        severity: "error",
+        retryable: false,
+        message: "Invalid --severity value. Expected info, warning, or error.",
+      },
+    });
+    expect(result.stderr).toBe("");
+    expect(result.stdout).not.toContain("stack");
+  });
+
+  it("maps invalid logs json tail values to stable cli usage responses", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["logs", "--json", "--tail", "10x"], workspaceDirectory);
+
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "logs",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        severity: "error",
+        retryable: false,
+        message: "Invalid --tail value. Expected a positive integer.",
+      },
+    });
+    expect(result.stderr).toBe("");
+    expect(result.stdout).not.toContain("stack");
+  });
+
+  it("maps unknown json commands to stable cli usage responses", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["unknown", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: false,
+      command: "unknown",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        retryable: false,
+        message: "Unknown command: unknown",
+      },
+    });
+    expect(result.stderr).toBe("");
+  });
+
   it("reports missing sessions through session inspect json", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
@@ -209,6 +304,57 @@ describe("agent commands", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("prints a json timeout envelope when start wait expires", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    spawnMock.mockClear();
+
+    const result = await runWithCapturedIo(["start", "--json", "--wait", "0"], workspaceDirectory);
+
+    expect(result.code).toBe(1);
+    expect(spawnMock).toHaveBeenCalled();
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "start",
+      error: {
+        code: "DD_SESSION_START_TIMEOUT",
+        severity: "error",
+        retryable: true,
+        evidence: [
+          { type: "session", path: path.join(workspaceDirectory, ".devdeck", "session.json") },
+          { type: "log", service: "devdeck", lines: [path.join(workspaceDirectory, ".devdeck", "devdeck.log")] },
+        ],
+        nextActions: [
+          {
+            type: "command",
+            command: "devdeck session inspect --json",
+          },
+        ],
+      },
+    });
+    expect(result.stderr).toBe("");
+  });
+
+  it("rejects invalid json start wait values as cli usage errors", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["start", "--json", "--wait", "301"], workspaceDirectory);
+
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: false,
+      command: "start",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        retryable: false,
+        message: "Invalid --wait value. Expected an integer from 0 to 300 seconds.",
+      },
+    });
+    expect(result.stderr).toBe("");
+  });
+
   it("clears stale sessions through session clear-stale json", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
@@ -221,6 +367,100 @@ describe("agent commands", () => {
     expect(result.code).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({
       schemaVersion: "devdeck.response.v1",
+      ok: true,
+      command: "session.clear-stale",
+      result: {
+        cleared: true,
+      },
+    });
+    await expect(
+      readFile(path.join(workspaceDirectory, ".devdeck", "session.json"), "utf8"),
+    ).rejects.toThrow();
+  });
+
+  it("reports missing clear-stale as successful with cleared false", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["session", "clear-stale", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: true,
+      command: "session.clear-stale",
+      result: {
+        cleared: false,
+      },
+    });
+    expect(result.stderr).toBe("");
+  });
+
+  it("refuses to clear running reachable sessions through session clear-stale json", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer();
+    servers.push(fixture);
+    await writeSessionFile(workspaceDirectory, {
+      pid: process.pid,
+      url: fixture.url,
+    });
+
+    const result = await runWithCapturedIo(["session", "clear-stale", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(4);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "session.clear-stale",
+      project: "sample",
+      error: {
+        code: "DD_SESSION_RUNNING",
+        retryable: false,
+        evidence: [{ type: "session", pid: process.pid, url: fixture.url }],
+      },
+    });
+    expect(result.stderr).toBe("");
+    await expect(
+      readFile(path.join(workspaceDirectory, ".devdeck", "session.json"), "utf8"),
+    ).resolves.toContain(fixture.url);
+  });
+
+  it("clears unreachable sessions through session clear-stale json", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    await writeSessionFile(workspaceDirectory, {
+      pid: process.pid,
+    });
+
+    const fetchImplementation = async () => new Response("{}", { status: 503 });
+    const result = await runWithCapturedIo(["session", "clear-stale", "--json"], workspaceDirectory, fetchImplementation);
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: true,
+      command: "session.clear-stale",
+      result: {
+        cleared: true,
+      },
+    });
+    await expect(
+      readFile(path.join(workspaceDirectory, ".devdeck", "session.json"), "utf8"),
+    ).rejects.toThrow();
+  });
+
+  it("clears wrong-project sessions through session clear-stale json", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    await writeSessionFile(workspaceDirectory, {
+      pid: process.pid,
+      configPath: path.join(workspaceDirectory, "other", "devdeck.yml"),
+    });
+
+    const result = await runWithCapturedIo(["session", "clear-stale", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
       ok: true,
       command: "session.clear-stale",
       result: {
@@ -274,6 +514,7 @@ async function writeSessionFile(
   overrides: Partial<{
     pid: number;
     url: string;
+    configPath: string;
   }> = {},
 ): Promise<void> {
   await mkdir(path.join(workspaceDirectory, ".devdeck"), { recursive: true });
@@ -302,6 +543,11 @@ async function createFixtureServer(): Promise<{
   const actions: Array<{ action: string; serviceName?: string }> = [];
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
+
+    if (request.method === "GET" && url.pathname === "/health") {
+      respondJson(response, 200, { ok: true });
+      return;
+    }
 
     if (request.method === "GET" && url.pathname === "/api/snapshot") {
       respondJson(response, 200, createSnapshot());

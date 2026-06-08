@@ -1,5 +1,7 @@
 import path from "node:path";
 
+import { findDevdeckConfigPath } from "@devdeck/config";
+
 import {
   clearSessionState,
   readSessionState,
@@ -50,11 +52,13 @@ export async function inspectSession(
   options: InspectSessionOptions = {},
 ): Promise<SessionInspection> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
-  const sessionPath = resolveSessionStatePath(cwd);
+  const currentConfigPath = await findDevdeckConfigPath(cwd);
+  const sessionCwd = currentConfigPath ? path.dirname(currentConfigPath) : cwd;
+  const sessionPath = resolveSessionStatePath(sessionCwd);
   let session: RuntimeSessionState;
 
   try {
-    session = await readSessionState(cwd);
+    session = await readSessionState(sessionCwd);
   } catch {
     return {
       state: "missing",
@@ -63,16 +67,30 @@ export async function inspectSession(
     };
   }
 
-  const expectedProjectRoot = path.dirname(path.resolve(session.configPath));
-  if (expectedProjectRoot !== cwd) {
+  const savedConfigPath = path.resolve(session.configPath);
+  if (currentConfigPath && savedConfigPath !== path.resolve(currentConfigPath)) {
     return {
       state: "wrong_project",
       cwd,
       sessionPath,
       session,
-      expectedProjectRoot,
-      actualProjectRoot: cwd,
+      expectedProjectRoot: path.dirname(path.resolve(currentConfigPath)),
+      actualProjectRoot: path.dirname(savedConfigPath),
     };
+  }
+
+  if (!currentConfigPath) {
+    const expectedProjectRoot = path.dirname(savedConfigPath);
+    if (expectedProjectRoot !== cwd) {
+      return {
+        state: "wrong_project",
+        cwd,
+        sessionPath,
+        session,
+        expectedProjectRoot,
+        actualProjectRoot: cwd,
+      };
+    }
   }
 
   if (!Number.isInteger(session.pid) || session.pid <= 0) {
@@ -131,11 +149,11 @@ export async function clearStaleSession(options: {
 } = {}): Promise<boolean> {
   const inspection = options.inspection ?? (await inspectSession({ cwd: options.cwd }));
 
-  if (inspection.state === "running") {
+  if (inspection.state === "running" || inspection.state === "missing") {
     return false;
   }
 
-  await clearSessionState(inspection.cwd);
+  await clearSessionState(path.dirname(path.dirname(inspection.sessionPath)));
   return true;
 }
 
