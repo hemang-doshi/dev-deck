@@ -8,6 +8,7 @@ import { runStartCommand } from "./commands/start.js";
 import { runInitCommand } from "./commands/init.js";
 import {
   runLogsCommand,
+  runSessionCommand,
   runServiceCommand,
   runSnapshotCommand,
   runStatusCommand,
@@ -15,7 +16,20 @@ import {
 } from "./commands/session.js";
 import type { CommandIo } from "./commands/init.js";
 
-type CommandName = "init" | "dev" | "start" | "agent" | "status" | "logs" | "snapshot" | "stop" | "service";
+import { createErrorResponse, printJsonResponse } from "./agent-response.js";
+import { createDevDeckErrorPayload } from "./agent-errors.js";
+
+type CommandName =
+  | "init"
+  | "dev"
+  | "start"
+  | "agent"
+  | "status"
+  | "logs"
+  | "snapshot"
+  | "stop"
+  | "service"
+  | "session";
 
 export type RunCliOptions = {
   cwd?: string;
@@ -28,9 +42,11 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   const io = options.io ?? defaultIo;
 
   if (!command) {
-    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session>\n");
     return 1;
   }
+
+  const jsonMode = argv.includes("--json");
 
   try {
     if (command === "init") {
@@ -53,12 +69,12 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
 
     if (command === "start") {
       const parsed = parseDevArgs(argv.slice(1));
-      await runStartCommand({
+      return await runStartCommand({
         cwd: options.cwd,
         io,
         port: parsed.port,
+        json: parsed.json,
       });
-      return 0;
     }
 
     if (command === "agent") {
@@ -67,54 +83,91 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     }
 
     if (command === "status") {
-      await runStatusCommand(argv.slice(1), {
+      return (await runStatusCommand(argv.slice(1), {
         cwd: options.cwd,
         io,
         fetchImplementation: options.fetchImplementation,
-      });
-      return 0;
+      }))
+        ? 0
+        : 4;
     }
 
     if (command === "logs") {
-      await runLogsCommand(argv.slice(1), {
+      return (await runLogsCommand(argv.slice(1), {
         cwd: options.cwd,
         io,
         fetchImplementation: options.fetchImplementation,
-      });
-      return 0;
+      }))
+        ? 0
+        : 1;
     }
 
     if (command === "snapshot") {
-      await runSnapshotCommand(argv.slice(1), {
+      return (await runSnapshotCommand(argv.slice(1), {
         cwd: options.cwd,
         io,
         fetchImplementation: options.fetchImplementation,
-      });
-      return 0;
+      }))
+        ? 0
+        : 4;
     }
 
     if (command === "stop") {
-      await runStopCommand(argv.slice(1), {
+      return (await runStopCommand(argv.slice(1), {
         cwd: options.cwd,
         io,
         fetchImplementation: options.fetchImplementation,
-      });
-      return 0;
+      }))
+        ? 0
+        : 4;
     }
 
     if (command === "service") {
-      await runServiceCommand(argv.slice(1), {
+      return (await runServiceCommand(argv.slice(1), {
         cwd: options.cwd,
         io,
         fetchImplementation: options.fetchImplementation,
-      });
-      return 0;
+      }))
+        ? 0
+        : 1;
+    }
+
+    if (command === "session") {
+      return (await runSessionCommand(argv.slice(1), {
+        cwd: options.cwd,
+        io,
+        fetchImplementation: options.fetchImplementation,
+      }))
+        ? 0
+        : 4;
     }
 
     io.stderr(`Unknown command: ${command}\n`);
-    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session>\n");
     return 1;
   } catch (error) {
+    if (jsonMode) {
+      printJsonResponse(
+        createErrorResponse(
+          {
+            command: command ?? "unknown",
+            summary: error instanceof DevdeckError ? error.message : "DevDeck command failed.",
+          },
+          createDevDeckErrorPayload({
+            code: error instanceof DevdeckError ? normalizeDevdeckErrorCode(error.code) : "DD_INTERNAL_UNEXPECTED",
+            message: error instanceof Error ? error.message : "Unexpected error",
+            hint: error instanceof DevdeckError ? error.hint : undefined,
+            severity: "error",
+            retryable: false,
+            evidence: [],
+            nextActions: [],
+          }),
+        ),
+        io.stdout,
+      );
+      return error instanceof DevdeckError ? 1 : 10;
+    }
+
     if (error instanceof DevdeckError) {
       io.stderr(`[${error.code}] ${error.message}\n`);
       if (error.hint) {
@@ -133,8 +186,9 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   }
 }
 
-function parseDevArgs(args: string[]): { port?: number } {
+function parseDevArgs(args: string[]): { port?: number; json: boolean } {
   let port: number | undefined;
+  let json = false;
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -155,10 +209,27 @@ function parseDevArgs(args: string[]): { port?: number } {
       continue;
     }
 
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+
     throw new Error(`Unknown dev option: ${arg}`);
   }
 
-  return { port };
+  return { port, json };
+}
+
+function normalizeDevdeckErrorCode(code: string): string {
+  if (code === "DD-ERR-0012") {
+    return "DD_SESSION_API_UNREACHABLE";
+  }
+
+  if (code === "DD-ERR-0014") {
+    return "DD_PROCESS_ACTION_FAILED";
+  }
+
+  return code.startsWith("DD_") ? code : "DD_INTERNAL_UNEXPECTED";
 }
 
 const defaultIo: CommandIo = {

@@ -3,6 +3,8 @@ import { access, mkdir } from "node:fs/promises";
 import { openSync } from "node:fs";
 import path from "node:path";
 import { DevdeckError, findDevdeckConfigPath } from "@devdeck/config";
+import { createDevDeckErrorPayload } from "../agent-errors.js";
+import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
 import { readSessionState, resolveSessionStatePath } from "../session-state.js";
 import type { CommandIo } from "./init.js";
 
@@ -10,9 +12,10 @@ export type StartCommandOptions = {
   cwd?: string;
   io?: CommandIo;
   port?: number;
+  json?: boolean;
 };
 
-export async function runStartCommand(options: StartCommandOptions = {}): Promise<void> {
+export async function runStartCommand(options: StartCommandOptions = {}): Promise<number> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const io = options.io ?? defaultIo;
 
@@ -33,9 +36,49 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
     if (state.pid) {
       try {
         process.kill(state.pid, 0); // Throws error if process is not running
-        io.stderr(`[DD-ERR-0013] DevDeck is already running at PID ${state.pid} (Dashboard: ${state.url}).\n`);
-        io.stderr("Hint: Run 'devdeck stop' to stop the current session first.\n");
-        process.exit(1);
+        if (options.json) {
+          printJsonResponse(
+            createErrorResponse(
+              {
+                command: "start",
+                project: state.project,
+                summary: "DevDeck session is already running.",
+              },
+              createDevDeckErrorPayload({
+                code: "DD_SESSION_RUNNING",
+                message: `DevDeck is already running at PID ${state.pid}.`,
+                hint: "Run devdeck stop --json to stop the current session first.",
+                severity: "error",
+                retryable: false,
+                evidence: [
+                  {
+                    type: "session",
+                    path: resolveSessionStatePath(configDir),
+                    pid: state.pid,
+                    url: state.url,
+                  },
+                ],
+                nextActions: [
+                  {
+                    type: "command",
+                    command: "devdeck status --json",
+                    reason: "Inspect the active DevDeck session.",
+                  },
+                  {
+                    type: "command",
+                    command: "devdeck stop --json",
+                    reason: "Stop the current session before starting another.",
+                  },
+                ],
+              }),
+            ),
+            io.stdout,
+          );
+        } else {
+          io.stderr(`[DD-ERR-0013] DevDeck is already running at PID ${state.pid} (Dashboard: ${state.url}).\n`);
+          io.stderr("Hint: Run 'devdeck stop' to stop the current session first.\n");
+        }
+        return 1;
       } catch {
         // PID is not active, session file is stale. Proceed to start.
       }
@@ -52,7 +95,9 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
   const out = openSync(logFile, "a");
   const err = openSync(logFile, "a");
 
-  io.stdout("Starting DevDeck in the background...\n");
+  if (!options.json) {
+    io.stdout("Starting DevDeck in the background...\n");
+  }
 
   // 3. Spawn the foreground dev command in detached mode
   const args = ["dev"];
@@ -80,11 +125,30 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
       await access(sessionPath);
       const state = await readSessionState(configDir);
       if (state.url && state.pid) {
-        io.stdout(`DevDeck started successfully in the background!\n`);
-        io.stdout(`PID: ${state.pid}\n`);
-        io.stdout(`Dashboard: ${state.url}\n`);
-        io.stdout(`Logs: ${logFile}\n`);
-        return;
+        if (options.json) {
+          printJsonResponse(
+            createSuccessResponse(
+              {
+                command: "start",
+                project: state.project,
+                summary: "DevDeck started successfully in the background.",
+              },
+              {
+                state: "running",
+                pid: state.pid,
+                url: state.url,
+                logs: logFile,
+              },
+            ),
+            io.stdout,
+          );
+        } else {
+          io.stdout(`DevDeck started successfully in the background!\n`);
+          io.stdout(`PID: ${state.pid}\n`);
+          io.stdout(`Dashboard: ${state.url}\n`);
+          io.stdout(`Logs: ${logFile}\n`);
+        }
+        return 0;
       }
     } catch {
       // Not ready yet
