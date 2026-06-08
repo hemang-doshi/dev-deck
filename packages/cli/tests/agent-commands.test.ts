@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -78,7 +78,16 @@ describe("agent commands", () => {
     );
 
     expect(status.code).toBe(0);
-    expect(JSON.parse(status.stdout).project).toBe("sample");
+    expect(JSON.parse(status.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: true,
+      command: "status",
+      project: "sample",
+      result: {
+        state: "running",
+      },
+      error: null,
+    });
 
     expect(stop.code).toBe(0);
     expect(stop.stdout).toContain("stop-session");
@@ -87,6 +96,140 @@ describe("agent commands", () => {
     expect(restart.code).toBe(0);
     expect(restart.stdout).toContain("restart");
     expect(fixture.actions).toContainEqual({ action: "restart", serviceName: "api" });
+  });
+
+  it("wraps snapshot, logs, stop, and service restart json output in the response envelope", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer();
+    servers.push(fixture);
+
+    const snapshot = await runWithCapturedIo(["snapshot", "--json", "--url", fixture.url], workspaceDirectory);
+    const logs = await runWithCapturedIo(["logs", "--json", "--url", fixture.url], workspaceDirectory);
+    const stop = await runWithCapturedIo(["stop", "--json", "--url", fixture.url], workspaceDirectory);
+    const restart = await runWithCapturedIo(
+      ["service", "restart", "api", "--json", "--url", fixture.url],
+      workspaceDirectory,
+    );
+
+    for (const result of [snapshot, logs, stop, restart]) {
+      expect(result.code).toBe(0);
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        schemaVersion: "devdeck.response.v1",
+        ok: true,
+        error: null,
+      });
+      expect(result.stderr).toBe("");
+    }
+
+    expect(JSON.parse(snapshot.stdout)).toMatchObject({ command: "snapshot", project: "sample" });
+    expect(JSON.parse(logs.stdout)).toMatchObject({ command: "logs", project: "sample" });
+    expect(JSON.parse(stop.stdout)).toMatchObject({ command: "stop" });
+    expect(JSON.parse(restart.stdout)).toMatchObject({ command: "service.restart" });
+  });
+
+  it("returns json errors without stack traces for expected session failures", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const fetchImplementation = async () => {
+      throw new Error("offline");
+    };
+    const status = await runWithCapturedIo(["status", "--json"], workspaceDirectory, fetchImplementation);
+    const stop = await runWithCapturedIo(["stop", "--json"], workspaceDirectory, fetchImplementation);
+
+    expect(status.code).toBe(4);
+    expect(JSON.parse(status.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      error: {
+        code: "DD_SESSION_API_UNREACHABLE",
+        severity: "error",
+        retryable: true,
+        evidence: [],
+      },
+    });
+    expect(status.stderr).toBe("");
+    expect(status.stdout).not.toContain("stack");
+
+    expect(stop.code).toBe(0);
+    expect(JSON.parse(stop.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: true,
+      command: "stop",
+      result: {
+        state: "not_running",
+      },
+    });
+    expect(stop.stderr).toBe("");
+  });
+
+  it("reports missing sessions through session inspect json", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["session", "inspect", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(4);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "session.inspect",
+      error: {
+        code: "DD_SESSION_NOT_RUNNING",
+        retryable: false,
+        evidence: [{ type: "session" }],
+      },
+    });
+    expect(result.stderr).toBe("");
+  });
+
+  it("returns json when start finds an already-running session", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    await writeSessionFile(workspaceDirectory, {
+      pid: process.pid,
+      url: "http://127.0.0.1:4545",
+    });
+
+    const result = await runWithCapturedIo(["start", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(1);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: false,
+      command: "start",
+      project: "sample",
+      error: {
+        code: "DD_SESSION_RUNNING",
+        retryable: false,
+        evidence: [{ type: "session", pid: process.pid }],
+      },
+    });
+    expect(result.stderr).toBe("");
+  });
+
+  it("clears stale sessions through session clear-stale json", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    await writeSessionFile(workspaceDirectory, {
+      pid: 999_999_999,
+    });
+
+    const result = await runWithCapturedIo(["session", "clear-stale", "--json"], workspaceDirectory);
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: true,
+      command: "session.clear-stale",
+      result: {
+        cleared: true,
+      },
+    });
+    await expect(
+      readFile(path.join(workspaceDirectory, ".devdeck", "session.json"), "utf8"),
+    ).rejects.toThrow();
   });
 
   it("prints the agent setup prompt and starter yaml template", async () => {
@@ -103,7 +246,7 @@ describe("agent commands", () => {
   });
 });
 
-async function runWithCapturedIo(argv: string[], cwd: string): Promise<{
+async function runWithCapturedIo(argv: string[], cwd: string, fetchImplementation?: typeof fetch): Promise<{
   code: number;
   stdout: string;
   stderr: string;
@@ -112,6 +255,7 @@ async function runWithCapturedIo(argv: string[], cwd: string): Promise<{
   const stderr: string[] = [];
   const code = await runCli(argv, {
     cwd,
+    fetchImplementation,
     io: {
       stdout: (message) => stdout.push(message),
       stderr: (message) => stderr.push(message),
@@ -123,6 +267,30 @@ async function runWithCapturedIo(argv: string[], cwd: string): Promise<{
     stdout: stdout.join(""),
     stderr: stderr.join(""),
   };
+}
+
+async function writeSessionFile(
+  workspaceDirectory: string,
+  overrides: Partial<{
+    pid: number;
+    url: string;
+  }> = {},
+): Promise<void> {
+  await mkdir(path.join(workspaceDirectory, ".devdeck"), { recursive: true });
+  await writeFile(
+    path.join(workspaceDirectory, ".devdeck", "session.json"),
+    JSON.stringify({
+      version: 1,
+      project: "sample",
+      configPath: path.join(workspaceDirectory, "devdeck.yml"),
+      url: "http://127.0.0.1:4545",
+      port: 4545,
+      pid: 1234,
+      startedAt: "2026-05-23T00:00:00.000Z",
+      ...overrides,
+    }),
+    "utf8",
+  );
 }
 
 async function createFixtureServer(): Promise<{
