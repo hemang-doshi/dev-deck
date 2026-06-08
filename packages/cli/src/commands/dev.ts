@@ -1,7 +1,7 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-import { loadDevdeckConfig, DevdeckError } from "@devdeck/config";
+import { loadDevdeckConfig, DevdeckError, type DevdeckServiceConfig } from "@devdeck/config";
 import { ServiceSession, type ServiceDefinition, type SessionEvent } from "@devdeck/core";
 import { createSessionServer } from "@devdeck/server";
 
@@ -109,12 +109,22 @@ const defaultIo: CommandIo = {
 
 function toServiceDefinition(
   serviceName: string,
-  service: { command: string; cwd: string; group?: string; port?: number },
+  service: DevdeckServiceConfig,
   directory: string,
 ): ServiceDefinition {
+  const command = service.command ?? service.exec?.argv.map(shellQuote).join(" ");
+
+  if (!command) {
+    throw new DevdeckError(
+      "DD_CONFIG_COMMAND_INVALID",
+      `Service '${serviceName}' does not define a runnable command.`,
+      "Define either 'command' or 'exec.argv' in devdeck.yml."
+    );
+  }
+
   const definition = {
     name: serviceName,
-    command: service.command,
+    command,
     cwd: path.resolve(directory, service.cwd),
     port: service.port,
   } as ServiceDefinition;
@@ -126,6 +136,14 @@ function toServiceDefinition(
   }
 
   return definition;
+}
+
+function shellQuote(argument: string): string {
+  if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(argument)) {
+    return argument;
+  }
+
+  return `'${argument.replaceAll("'", "'\\''")}'`;
 }
 
 function handleSessionEvent(event: SessionEvent, io: CommandIo): void {
