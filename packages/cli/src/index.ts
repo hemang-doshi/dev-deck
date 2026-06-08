@@ -18,6 +18,7 @@ import type { CommandIo } from "./commands/init.js";
 
 import { createErrorResponse, printJsonResponse } from "./agent-response.js";
 import { createDevDeckErrorPayload } from "./agent-errors.js";
+import { CliUsageError } from "./cli-errors.js";
 
 type CommandName =
   | "init"
@@ -68,12 +69,13 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     }
 
     if (command === "start") {
-      const parsed = parseDevArgs(argv.slice(1));
+      const parsed = parseStartArgs(argv.slice(1));
       return await runStartCommand({
         cwd: options.cwd,
         io,
         port: parsed.port,
         json: parsed.json,
+        waitSeconds: parsed.waitSeconds,
       });
     }
 
@@ -142,11 +144,34 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         : 4;
     }
 
-    io.stderr(`Unknown command: ${command}\n`);
-    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session>\n");
-    return 1;
+    throw new CliUsageError(
+      `Unknown command: ${command}`,
+      "Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session>",
+    );
   } catch (error) {
     if (jsonMode) {
+      if (error instanceof CliUsageError) {
+        printJsonResponse(
+          createErrorResponse(
+            {
+              command: command ?? "unknown",
+              summary: error.message,
+            },
+            createDevDeckErrorPayload({
+              code: "DD_CLI_USAGE_INVALID",
+              message: error.message,
+              hint: error.hint,
+              severity: "error",
+              retryable: false,
+              evidence: [],
+              nextActions: [],
+            }),
+          ),
+          io.stdout,
+        );
+        return 2;
+      }
+
       printJsonResponse(
         createErrorResponse(
           {
@@ -176,6 +201,14 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       return 1;
     }
 
+    if (error instanceof CliUsageError) {
+      io.stderr(`Usage error: ${error.message}\n`);
+      if (error.hint) {
+        io.stderr(`Hint: ${error.hint}\n`);
+      }
+      return 2;
+    }
+
     if (error instanceof Error) {
       io.stderr(`[DD-ERR-9999] Unexpected error: ${error.message}\n`);
       return 1;
@@ -194,17 +227,7 @@ function parseDevArgs(args: string[]): { port?: number; json: boolean } {
     const arg = args[index];
 
     if (arg === "--port") {
-      const raw = args[index + 1];
-      if (!raw) {
-        throw new Error("Missing value for --port.");
-      }
-
-      const parsed = Number.parseInt(raw, 10);
-      if (!Number.isInteger(parsed) || parsed < 1) {
-        throw new Error("Invalid --port value. Expected a positive integer.");
-      }
-
-      port = parsed;
+      port = parsePortValue(args[index + 1]);
       index += 1;
       continue;
     }
@@ -214,10 +237,67 @@ function parseDevArgs(args: string[]): { port?: number; json: boolean } {
       continue;
     }
 
-    throw new Error(`Unknown dev option: ${arg}`);
+    throw new CliUsageError(`Unknown option: ${arg}`);
   }
 
   return { port, json };
+}
+
+function parseStartArgs(args: string[]): { port?: number; json: boolean; waitSeconds: number } {
+  let port: number | undefined;
+  let json = false;
+  let waitSeconds = 10;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--port") {
+      port = parsePortValue(args[index + 1]);
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--wait") {
+      waitSeconds = parseWaitValue(args[index + 1]);
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+
+    throw new CliUsageError(`Unknown option: ${arg}`);
+  }
+
+  return { port, json, waitSeconds };
+}
+
+function parsePortValue(raw: string | undefined): number {
+  if (!raw) {
+    throw new CliUsageError("Missing value for --port.");
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(parsed) || parsed < 1) {
+    throw new CliUsageError("Invalid --port value. Expected a positive integer.");
+  }
+
+  return parsed;
+}
+
+function parseWaitValue(raw: string | undefined): number {
+  if (!raw) {
+    throw new CliUsageError("Missing value for --wait.");
+  }
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(parsed) || parsed < 0 || parsed > 300) {
+    throw new CliUsageError("Invalid --wait value. Expected an integer from 0 to 300 seconds.");
+  }
+
+  return parsed;
 }
 
 function normalizeDevdeckErrorCode(code: string): string {

@@ -3,6 +3,7 @@ import { DevdeckError } from "@devdeck/config";
 import { getLogs, getSnapshot, postAction, type AgentClientOptions } from "../agent-client.js";
 import { createDevDeckErrorPayload, type DevDeckErrorPayload } from "../agent-errors.js";
 import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
+import { CliUsageError } from "../cli-errors.js";
 import { formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
 import { clearStaleSession, inspectSession, type SessionInspection } from "../session-inspector.js";
 import type { CommandIo } from "./init.js";
@@ -96,7 +97,7 @@ export async function runLogsCommand(
     if (arg === "--severity") {
       const value = args[index + 1];
       if (value !== "info" && value !== "warning" && value !== "error") {
-        throw new Error("Invalid --severity value. Expected info, warning, or error.");
+        throw new CliUsageError("Invalid --severity value. Expected info, warning, or error.");
       }
       severity = value;
       index += 1;
@@ -120,7 +121,7 @@ export async function runLogsCommand(
       continue;
     }
 
-    throw new Error(`Unknown logs option: ${arg}`);
+    throw new CliUsageError(`Unknown option: ${arg}`);
   }
 
   try {
@@ -300,11 +301,11 @@ export async function runServiceCommand(
   const flags = parseCommonFlags(args.slice(2));
 
   if (action !== "start" && action !== "stop" && action !== "restart") {
-    throw new Error("Usage: devdeck service <start|stop|restart> <name> [--url URL]");
+    throw new CliUsageError("Usage: devdeck service <start|stop|restart> <name> [--url URL]");
   }
 
   if (!serviceName) {
-    throw new Error("Usage: devdeck service <start|stop|restart> <name> [--url URL]");
+    throw new CliUsageError("Usage: devdeck service <start|stop|restart> <name> [--url URL]");
   }
 
   try {
@@ -465,7 +466,7 @@ export async function runSessionCommand(
     return true;
   }
 
-  throw new Error("Usage: devdeck session <inspect|clear-stale> [--json]");
+  throw new CliUsageError("Usage: devdeck session <inspect|clear-stale> [--json]");
 }
 
 function parseCommonFlags(args: string[]): { json: boolean; url?: string } {
@@ -491,7 +492,7 @@ function parseCommonFlags(args: string[]): { json: boolean; url?: string } {
       continue;
     }
 
-    throw new Error(`Unknown option: ${arg}`);
+    throw new CliUsageError(`Unknown option: ${arg}`);
   }
 
   return { json, url };
@@ -508,10 +509,11 @@ function parseOptionalTail(args: string[]): number {
 }
 
 function parsePositiveInteger(value: string | undefined, flagName: string): number {
-  const parsed = Number.parseInt(requireValue(value, flagName), 10);
+  const raw = requireValue(value, flagName);
+  const parsed = Number.parseInt(raw, 10);
 
-  if (!Number.isInteger(parsed) || parsed < 1) {
-    throw new Error(`Invalid ${flagName} value. Expected a positive integer.`);
+  if (!/^\d+$/.test(raw) || !Number.isInteger(parsed) || parsed < 1) {
+    throw new CliUsageError(`Invalid ${flagName} value. Expected a positive integer.`);
   }
 
   return parsed;
@@ -519,7 +521,7 @@ function parsePositiveInteger(value: string | undefined, flagName: string): numb
 
 function requireValue(value: string | undefined, flagName: string): string {
   if (!value) {
-    throw new Error(`Missing value for ${flagName}.`);
+    throw new CliUsageError(`Missing value for ${flagName}.`);
   }
 
   return value;

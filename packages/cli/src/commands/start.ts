@@ -13,11 +13,13 @@ export type StartCommandOptions = {
   io?: CommandIo;
   port?: number;
   json?: boolean;
+  waitSeconds?: number;
 };
 
 export async function runStartCommand(options: StartCommandOptions = {}): Promise<number> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const io = options.io ?? defaultIo;
+  const waitSeconds = options.waitSeconds ?? 10;
 
   // Resolve where devdeck.yml is located so we check/write state in the correct directory
   let configDir = cwd;
@@ -117,7 +119,7 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
   // 4. Poll for session.json to be written and HTTP server to become responsive
   const sessionPath = resolveSessionStatePath(configDir);
   let attempts = 0;
-  const maxAttempts = 30; // 3 seconds total
+  const maxAttempts = waitSeconds * 10;
 
   while (attempts < maxAttempts) {
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -156,9 +158,49 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
     attempts += 1;
   }
 
+  const message = `DevDeck background process started but failed to write session state within ${waitSeconds} second${waitSeconds === 1 ? "" : "s"}.`;
+
+  if (options.json) {
+    printJsonResponse(
+      createErrorResponse(
+        {
+          command: "start",
+          summary: message,
+        },
+        createDevDeckErrorPayload({
+          code: "DD_SESSION_START_TIMEOUT",
+          message,
+          hint: `Check background logs at ${logFile} for details.`,
+          severity: "error",
+          retryable: true,
+          evidence: [
+            {
+              type: "session",
+              path: sessionPath,
+            },
+            {
+              type: "log",
+              service: "devdeck",
+              lines: [logFile],
+            },
+          ],
+          nextActions: [
+            {
+              type: "command",
+              command: "devdeck session inspect --json",
+              reason: "Inspect the saved DevDeck session state.",
+            },
+          ],
+        }),
+      ),
+      io.stdout,
+    );
+    return 1;
+  }
+
   throw new DevdeckError(
     "DD-ERR-0014",
-    "DevDeck background process started but failed to write session state within 3 seconds.",
+    message,
     `Check background logs at ${logFile} for details.`
   );
 }
