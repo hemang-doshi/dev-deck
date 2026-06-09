@@ -11,6 +11,7 @@
     "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard"
   },
   "devDependencies": {
+    "@adobe/css-tools": "4.4.4",
     "@types/node": "^24.10.1",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.28.0",
