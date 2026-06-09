@@ -1,12 +1,13 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
 
-import { loadDevdeckConfig, DevdeckError, type DevdeckServiceConfig } from "@devdeck/config";
+import { loadDevdeckConfig, DevdeckError } from "@devdeck/config";
 import { ServiceSession, type ServiceDefinition, type SessionEvent } from "@devdeck/core";
 import { createSessionServer } from "@devdeck/server";
 
 import type { CommandIo } from "./init.js";
 import { clearSessionState, writeSessionState } from "../session-state.js";
+import { createRuntimeServiceDefinitions } from "../runtime-service-definition.js";
 
 export type DevCommandOptions = {
   cwd?: string;
@@ -19,9 +20,7 @@ export type DevCommandOptions = {
 export async function runDevCommand(options: DevCommandOptions = {}): Promise<void> {
   const io = options.io ?? defaultIo;
   const loaded = await loadDevdeckConfig(options.cwd);
-  const services = Object.entries(loaded.config.services).map(([serviceName, service]) =>
-    toServiceDefinition(serviceName, service, loaded.directory),
-  );
+  const services = await createRuntimeServiceDefinitions(loaded);
   const session = new ServiceSession({
     project: loaded.config.project,
     services,
@@ -76,7 +75,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<vo
   io.stdout(`Starting ${services.length} service${services.length === 1 ? "" : "s"}\n`);
 
   for (const service of services) {
-    const parts = [`- ${service.name}: ${service.command}`, `cwd=${service.cwd}`];
+    const parts = [`- ${service.name}: ${describeLaunch(service)}`, `cwd=${service.cwd}`];
 
     if (service.port !== undefined) {
       parts.push(`port=${service.port}`);
@@ -107,43 +106,8 @@ const defaultIo: CommandIo = {
   stderr: (message) => process.stderr.write(message),
 };
 
-function toServiceDefinition(
-  serviceName: string,
-  service: DevdeckServiceConfig,
-  directory: string,
-): ServiceDefinition {
-  const command = service.command ?? service.exec?.argv.map(shellQuote).join(" ");
-
-  if (!command) {
-    throw new DevdeckError(
-      "DD_CONFIG_COMMAND_INVALID",
-      `Service '${serviceName}' does not define a runnable command.`,
-      "Define either 'command' or 'exec.argv' in devdeck.yml."
-    );
-  }
-
-  const definition = {
-    name: serviceName,
-    command,
-    cwd: path.resolve(directory, service.cwd),
-    port: service.port,
-  } as ServiceDefinition;
-
-  if (service.group !== undefined) {
-    Object.assign(definition as ServiceDefinition & { group?: string }, {
-      group: service.group,
-    });
-  }
-
-  return definition;
-}
-
-function shellQuote(argument: string): string {
-  if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(argument)) {
-    return argument;
-  }
-
-  return `'${argument.replaceAll("'", "'\\''")}'`;
+function describeLaunch(service: ServiceDefinition): string {
+  return service.exec ? `exec ${service.exec.argv.join(" ")}` : service.command ?? "";
 }
 
 function handleSessionEvent(event: SessionEvent, io: CommandIo): void {

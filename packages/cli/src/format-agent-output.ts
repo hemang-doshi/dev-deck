@@ -8,7 +8,7 @@ export function formatStatus(snapshot: SessionSnapshot): string {
     "Services:",
     ...snapshot.services.map(
       (service) =>
-        `- ${service.name} | status=${service.status} | health=${service.health} | pid=${service.pid ?? "none"} | restarts=${service.restartCount}`,
+        `- ${service.name} | status=${service.status} | readiness=${service.readiness} | health=${service.health} | pid=${service.pid ?? "none"} | restarts=${service.restartCount}${service.blockedBy.length > 0 ? ` | blockedBy=${service.blockedBy.join(",")}` : ""}`,
     ),
   ];
 
@@ -39,7 +39,7 @@ export function formatSnapshot(snapshot: SessionSnapshot, tail: number): string 
     "## Services",
     ...snapshot.services.map(
       (service) =>
-        `- ${service.name}: status=${service.status}, health=${service.health}, restarts=${service.restartCount}, error=${service.lastError ?? "none"}`,
+        `- ${service.name}: status=${service.status}, readiness=${service.readiness}, health=${service.health}, blockedBy=${service.blockedBy.join(",") || "none"}, restarts=${service.restartCount}, error=${service.lastError ?? "none"}`,
     ),
     "",
     "## Logs",
