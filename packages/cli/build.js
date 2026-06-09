@@ -2,8 +2,10 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { build } from "esbuild";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const buildDirectory = __dirname.replaceAll("\\", "/");
 
 async function main() {
   console.log("Cleaning dist directory...");
@@ -21,10 +23,17 @@ async function main() {
   }
 
   console.log("Bundling CLI with esbuild...");
-  execSync(
-    "npx esbuild src/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:ws --external:yaml --external:fsevents --minify",
-    { cwd: __dirname, stdio: "inherit" }
-  );
+  await build({
+    absWorkingDir: buildDirectory,
+    bundle: true,
+    entryPoints: ["./src/index.ts"],
+    external: ["ws", "yaml", "fsevents"],
+    format: "esm",
+    minify: true,
+    outfile: "./dist/index.js",
+    platform: "node",
+    target: "node20",
+  });
 
   console.log("Copying dashboard assets...");
   const srcDashboard = path.resolve(__dirname, "../../apps/dashboard/out");

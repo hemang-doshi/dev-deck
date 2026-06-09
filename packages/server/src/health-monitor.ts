@@ -1,13 +1,24 @@
-import net from "node:net";
-
 import type { ServiceSession } from "@devdeck/core";
 
 export function startHealthMonitor(session: ServiceSession): { stop: () => void } {
+  let updating = false;
+  const runUpdate = async () => {
+    if (updating) {
+      return;
+    }
+
+    updating = true;
+    try {
+      await updateHealth(session);
+    } finally {
+      updating = false;
+    }
+  };
   const timer = setInterval(() => {
-    void updateHealth(session);
+    void runUpdate();
   }, 1_000);
 
-  void updateHealth(session);
+  void runUpdate();
 
   return {
     stop() {
@@ -21,34 +32,7 @@ async function updateHealth(session: ServiceSession): Promise<void> {
 
   await Promise.all(
     snapshot.services.map(async (service) => {
-      if (!service.port || service.status !== "running") {
-        session.setServiceHealth(service.name, "unknown");
-        return;
-      }
-
-      const healthy = await checkPort(service.port);
-      session.setServiceHealth(service.name, healthy ? "healthy" : "unreachable");
+      await session.refreshServiceHealth(service.name);
     }),
   );
-}
-
-function checkPort(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const socket = net.connect({ host: "127.0.0.1", port });
-    const timeout = setTimeout(() => {
-      socket.destroy();
-      resolve(false);
-    }, 300);
-
-    socket.once("connect", () => {
-      clearTimeout(timeout);
-      socket.end();
-      resolve(true);
-    });
-
-    socket.once("error", () => {
-      clearTimeout(timeout);
-      resolve(false);
-    });
-  });
 }

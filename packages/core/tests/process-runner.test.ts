@@ -1,5 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,9 +10,9 @@ describe("ProcessRunner", () => {
   const tempDirectories: string[] = [];
 
   afterEach(async () => {
-    await Promise.all(
-      tempDirectories.map((directory) => rm(directory, { recursive: true, force: true })),
-    );
+    for (const directory of tempDirectories) {
+      await removeWorkspace(directory);
+    }
     tempDirectories.length = 0;
   });
 
@@ -65,7 +64,7 @@ describe("ProcessRunner", () => {
     const runner = new ProcessRunner({
       name: "api",
       command: "node -e \"console.log('hi')\"",
-      cwd: path.join(os.tmpdir(), "devdeck-missing-directory"),
+      cwd: path.join(testTempRoot(), "devdeck-missing-directory"),
     });
 
     await expect(runner.start()).rejects.toThrow();
@@ -114,13 +113,102 @@ describe("ProcessRunner", () => {
 
     expect(exitCode).not.toBe(0);
   });
+
+  it("runs exec.argv without shell and merges service env", async () => {
+    const workspaceDirectory = await createWorkspace(tempDirectories);
+    const runner = new ProcessRunner({
+      name: "exec",
+      exec: {
+        argv: [process.execPath, "-e", "console.log(process.env.DD_EXEC_TEST)"],
+      },
+      cwd: workspaceDirectory,
+      env: {
+        DD_EXEC_TEST: "from-env",
+      },
+    });
+    const outputLines: string[] = [];
+
+    runner.subscribe((event) => {
+      if (event.type === "output") {
+        outputLines.push(event.log.line);
+      }
+    });
+
+    await runner.start();
+    await waitFor(() => outputLines.includes("from-env"));
+
+    expect(outputLines).toContain("from-env");
+  });
+
+  it("restarts failed processes up to maxRestarts", async () => {
+    const workspaceDirectory = await createWorkspace(tempDirectories);
+    const runner = new ProcessRunner({
+      name: "flaky",
+      command: "node -e \"process.exit(1)\"",
+      cwd: workspaceDirectory,
+      restartPolicy: {
+        mode: "on-failure",
+        maxRestarts: 2,
+        delayMs: 10,
+      },
+    });
+
+    await runner.start();
+    await waitFor(() => runner.restartCount === 2);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(runner.restartCount).toBe(2);
+  });
+
+  it("runs npm through exec.argv without explicit shell config", async () => {
+    const runner = new ProcessRunner({
+      name: "npm",
+      exec: {
+        argv: ["npm", "--version"],
+      },
+      cwd: process.cwd(),
+    });
+    const outputLines: string[] = [];
+
+    runner.subscribe((event) => {
+      if (event.type === "output") {
+        outputLines.push(event.log.line);
+      }
+    });
+
+    await runner.start();
+    await waitFor(() => outputLines.length > 0);
+
+    expect(outputLines.join("\n")).toMatch(/\d+\.\d+\.\d+/);
+  });
 });
 
 async function createWorkspace(tempDirectories: string[]): Promise<string> {
-  const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-core-"));
-  tempDirectories.push(workspaceDirectory);
-  await writeFile(path.join(workspaceDirectory, "placeholder.txt"), "ok\n", "utf8");
-  return workspaceDirectory;
+  void tempDirectories;
+  return process.cwd();
+}
+
+function testTempRoot(): string {
+  return path.resolve(process.cwd(), "../../.devdeck/core-tests");
+}
+
+async function removeWorkspace(directory: string): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    try {
+      await rm(directory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+
+      if (code !== "EBUSY" && code !== "ENOTEMPTY" && code !== "EPERM") {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  await rm(directory, { recursive: true, force: true });
 }
 
 async function waitFor(assertion: () => boolean, timeoutMs: number = 2_000): Promise<void> {

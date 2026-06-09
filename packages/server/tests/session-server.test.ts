@@ -1,5 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -13,9 +12,9 @@ describe("createSessionServer", () => {
   const tempDirectories: string[] = [];
 
   afterEach(async () => {
-    await Promise.all(
-      tempDirectories.map((directory) => rm(directory, { recursive: true, force: true })),
-    );
+    for (const directory of tempDirectories) {
+      await removeWorkspace(directory);
+    }
     tempDirectories.length = 0;
   });
 
@@ -28,7 +27,7 @@ describe("createSessionServer", () => {
           name: "web",
           command:
             "node -e \"console.log('ready'); setInterval(() => console.log('tick'), 100)\"",
-          cwd: workspaceDirectory,
+          cwd: process.cwd(),
         },
       ],
       maxLogLines: 3,
@@ -63,7 +62,7 @@ describe("createSessionServer", () => {
           name: "web",
           command:
             "node -e \"let count = 0; const timer = setInterval(() => { console.log('line-' + count); count += 1; if (count === 5) clearInterval(timer); }, 25)\"",
-          cwd: workspaceDirectory,
+          cwd: process.cwd(),
         },
       ],
       maxLogLines: 2,
@@ -98,7 +97,7 @@ describe("createSessionServer", () => {
           name: "worker",
           command:
             "node -e \"console.log('boot'); setInterval(() => console.log('pulse'), 50)\"",
-          cwd: workspaceDirectory,
+          cwd: process.cwd(),
         },
       ],
     });
@@ -166,7 +165,7 @@ describe("createSessionServer", () => {
           name: "api",
           command:
             "node -e \"console.log('boot complete'); console.error('Database ERROR'); console.log('trace user=alice'); setTimeout(() => process.exit(0), 20)\"",
-          cwd: workspaceDirectory,
+          cwd: process.cwd(),
         },
       ],
       maxLogLines: 10,
@@ -214,7 +213,7 @@ describe("createSessionServer", () => {
           name: "web",
           command:
             "node -e \"console.log('line-1'); console.log('line-2'); console.log('line-3'); setTimeout(() => process.exit(0), 20)\"",
-          cwd: workspaceDirectory,
+          cwd: process.cwd(),
         },
       ],
       maxLogLines: 10,
@@ -245,7 +244,7 @@ describe("createSessionServer", () => {
 });
 
 async function createWorkspace(tempDirectories: string[]): Promise<string> {
-  const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-server-"));
+  const workspaceDirectory = path.resolve(process.cwd(), "../../.devdeck/server-tests");
   tempDirectories.push(workspaceDirectory);
   await mkdir(path.join(workspaceDirectory, "assets"), { recursive: true });
   await writeFile(
@@ -254,6 +253,25 @@ async function createWorkspace(tempDirectories: string[]): Promise<string> {
     "utf8",
   );
   return workspaceDirectory;
+}
+
+async function removeWorkspace(directory: string): Promise<void> {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      await rm(directory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+
+      if (code !== "EBUSY" && code !== "ENOTEMPTY" && code !== "EPERM") {
+        throw error;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  await rm(directory, { recursive: true, force: true });
 }
 
 async function collectMessages(
