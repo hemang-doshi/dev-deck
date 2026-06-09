@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const buildDirectory = __dirname.replaceAll("\\", "/");
 
 async function main() {
   console.log("Cleaning dist directory...");
@@ -24,13 +23,12 @@ async function main() {
 
   console.log("Bundling CLI with esbuild...");
   await build({
-    absWorkingDir: buildDirectory,
     bundle: true,
-    entryPoints: ["./src/index.ts"],
+    entryPoints: [path.join(__dirname, "src", "index.ts")],
     external: ["ws", "yaml", "fsevents"],
     format: "esm",
     minify: true,
-    outfile: "./dist/index.js",
+    outfile: path.join(__dirname, "dist", "index.js"),
     platform: "node",
     target: "node20",
   });

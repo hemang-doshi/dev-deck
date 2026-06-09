@@ -50,8 +50,10 @@ export type BrowserSessionClient = {
 };
 
 const EMPTY_SNAPSHOT: DashboardSnapshot = {
+  sessionId: "",
   project: "",
   startedAt: "",
+  eventCursor: null,
   services: [],
   logs: [],
 };

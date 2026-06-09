@@ -26,8 +26,10 @@ describe("DashboardShell", () => {
 
     const performAction = vi.fn().mockResolvedValue(undefined);
     const client = createControllableClient({
+      sessionId: "session-demo",
       project: "demo",
       startedAt: "2026-05-23T00:00:00.000Z",
+      eventCursor: null,
       services: [
         {
           name: "web",
@@ -179,8 +181,10 @@ describe("DashboardShell", () => {
     render(
       <DashboardShell
         client={createStaticClient({
+          sessionId: "session-demo",
           project: "demo",
           startedAt: "2026-05-23T00:00:00.000Z",
+          eventCursor: null,
           services: [],
           logs: [],
         })}
@@ -210,8 +214,10 @@ describe("DashboardShell", () => {
       webSocket.instances[0]?.emitMessage({
         type: "snapshot",
         snapshot: {
+          sessionId: "session-demo",
           project: "demo",
           startedAt: "2026-05-23T00:00:00.000Z",
+          eventCursor: null,
           services: [],
           logs: [],
         },
@@ -270,8 +276,10 @@ describe("DashboardShell", () => {
       webSocket.instances[0]?.emitMessage({
         type: "snapshot",
         snapshot: {
+          sessionId: "session-demo",
           project: "demo",
           startedAt: "2026-05-23T00:00:00.000Z",
+          eventCursor: null,
           services: [],
           logs: [
             {
@@ -311,8 +319,10 @@ describe("DashboardShell", () => {
         handlers.onConnectionState("connected");
         handlers.onConnectionMeta?.({ hasReceivedSnapshot: true });
         handlers.onSnapshot({
+          sessionId: "session-demo",
           project: "demo",
           startedAt: "2026-05-23T00:00:00.000Z",
+          eventCursor: null,
           services: [],
           logs: [],
         });
@@ -339,8 +349,10 @@ function createStaticClient(snapshot: Parameters<typeof createControllableClient
 }
 
 function createControllableClient(snapshot: {
+  sessionId: string;
   project: string;
   startedAt: string;
+  eventCursor: string | null;
   services: Array<Record<string, unknown>>;
   logs: Array<Record<string, unknown>>;
 }, performAction = vi.fn().mockResolvedValue(undefined)) {
@@ -368,8 +380,10 @@ function createControllableClient(snapshot: {
 
 function buildSnapshot() {
   return {
+    sessionId: "session-demo",
     project: "demo",
     startedAt: "2026-05-23T00:00:00.000Z",
+    eventCursor: null,
     services: [
       {
         name: "web",

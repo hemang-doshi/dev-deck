@@ -1,6 +1,6 @@
-import type { LogSeverity, SessionSnapshot } from "@devdeck/core";
+import type { DevDeckEventType, LogSeverity, LogStream, SessionSnapshot, SeverityText } from "@devdeck/core";
 import { DevdeckError } from "@devdeck/config";
-import { getLogs, getSnapshot, postAction, type AgentClientOptions } from "../agent-client.js";
+import { getEvents, getLogs, getSnapshot, postAction, streamEvents, type AgentClientOptions } from "../agent-client.js";
 import { createDevDeckErrorPayload, type DevDeckErrorPayload } from "../agent-errors.js";
 import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
 import { CliUsageError } from "../cli-errors.js";
@@ -72,7 +72,13 @@ export async function runLogsCommand(
   let service: string | undefined;
   let tail = 80;
   let severity: LogSeverity | undefined;
+  let logStream: LogStream | undefined;
   let grep: string | undefined;
+  let errors = false;
+  let context: number | undefined;
+  let since: string | undefined;
+  let stream = false;
+  let jsonl = false;
   let json = false;
   let url: string | undefined;
 
@@ -110,8 +116,41 @@ export async function runLogsCommand(
       continue;
     }
 
+    if (arg === "--stream") {
+      const value = args[index + 1];
+      if (value === "stdout" || value === "stderr") {
+        logStream = parseLogStream(value);
+        index += 1;
+      } else {
+        stream = true;
+      }
+      continue;
+    }
+
+    if (arg === "--errors") {
+      errors = true;
+      continue;
+    }
+
+    if (arg === "--context") {
+      context = parseNonNegativeInteger(args[index + 1], "--context");
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--since") {
+      since = requireValue(args[index + 1], "--since");
+      index += 1;
+      continue;
+    }
+
     if (arg === "--json") {
       json = true;
+      continue;
+    }
+
+    if (arg === "--jsonl") {
+      jsonl = true;
       continue;
     }
 
@@ -125,12 +164,41 @@ export async function runLogsCommand(
   }
 
   try {
+    if (stream) {
+      if (!jsonl) {
+        throw new CliUsageError("Usage: devdeck logs [service] --stream --jsonl [--url URL]");
+      }
+
+      await streamEvents(
+        (event) => {
+          if (
+            event.type === "service.log" &&
+            (!service || event.service === service) &&
+            (!logStream || event.stream === logStream) &&
+            (!severity || event.severityText?.toLowerCase() === severity) &&
+            (!grep || event.body?.toLowerCase().includes(grep.toLowerCase()))
+          ) {
+            writeOutput(options.io, `${JSON.stringify(event)}\n`);
+          }
+        },
+        {
+          cwd: options.cwd,
+          url,
+        },
+      );
+      return true;
+    }
+
     const result = await getLogs(
       {
         service,
         tail,
         severity,
+        stream: logStream,
         grep,
+        errors,
+        context,
+        since,
       },
       {
         cwd: options.cwd,
@@ -173,6 +241,132 @@ export async function runLogsCommand(
     );
     return false;
   }
+}
+
+export async function runEventsCommand(
+  args: string[],
+  options: SessionCommandOptions = {},
+): Promise<boolean> {
+  let service: string | undefined;
+  let tail = 100;
+  let type: DevDeckEventType | undefined;
+  let severity: SeverityText | undefined;
+  let since: string | undefined;
+  let grep: string | undefined;
+  let stream = false;
+  let jsonl = false;
+  let url: string | undefined;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (!arg) {
+      continue;
+    }
+
+    if (!arg.startsWith("--") && service === undefined) {
+      service = arg;
+      continue;
+    }
+
+    if (arg === "--tail") {
+      tail = parsePositiveInteger(args[index + 1], "--tail");
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--type") {
+      type = requireValue(args[index + 1], "--type") as DevDeckEventType;
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--severity") {
+      severity = parseEventSeverity(requireValue(args[index + 1], "--severity"));
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--since") {
+      since = requireValue(args[index + 1], "--since");
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--grep") {
+      grep = requireValue(args[index + 1], "--grep");
+      index += 1;
+      continue;
+    }
+
+    if (arg === "--jsonl") {
+      jsonl = true;
+      continue;
+    }
+
+    if (arg === "--stream") {
+      stream = true;
+      continue;
+    }
+
+    if (arg === "--url") {
+      url = requireValue(args[index + 1], "--url");
+      index += 1;
+      continue;
+    }
+
+    throw new CliUsageError(`Unknown option: ${arg}`);
+  }
+
+  if (!jsonl) {
+    throw new CliUsageError("Usage: devdeck events [service] --jsonl [--stream] [--tail N] [--url URL]");
+  }
+
+  if (stream) {
+    if (since) {
+      throw new CliUsageError("devdeck events --stream does not support --since; use bounded devdeck events --jsonl --since first.");
+    }
+
+    await streamEvents(
+      (event) => {
+        if (
+          (!service || event.service === service) &&
+          (!type || event.type === type) &&
+          (!severity || event.severityText === severity) &&
+          (!grep || event.body?.toLowerCase().includes(grep.toLowerCase()))
+        ) {
+          writeOutput(options.io, `${JSON.stringify(event)}\n`);
+        }
+      },
+      {
+        cwd: options.cwd,
+        url,
+      },
+    );
+    return true;
+  }
+
+  const result = await getEvents(
+    {
+      service,
+      tail,
+      type,
+      severity,
+      since,
+      grep,
+    },
+    {
+      cwd: options.cwd,
+      fetchImplementation: options.fetchImplementation,
+      url,
+    },
+  );
+
+  for (const event of result.events) {
+    writeOutput(options.io, `${JSON.stringify(event)}\n`);
+  }
+
+  return true;
 }
 
 export async function runSnapshotCommand(
@@ -517,6 +711,34 @@ function parsePositiveInteger(value: string | undefined, flagName: string): numb
   }
 
   return parsed;
+}
+
+function parseNonNegativeInteger(value: string | undefined, flagName: string): number {
+  const raw = requireValue(value, flagName);
+  const parsed = Number.parseInt(raw, 10);
+
+  if (!/^\d+$/.test(raw) || !Number.isInteger(parsed) || parsed < 0) {
+    throw new CliUsageError(`Invalid ${flagName} value. Expected a non-negative integer.`);
+  }
+
+  return parsed;
+}
+
+function parseLogStream(value: string): LogStream {
+  if (value === "stdout" || value === "stderr") {
+    return value;
+  }
+
+  throw new CliUsageError("Invalid --stream value. Expected stdout or stderr.");
+}
+
+function parseEventSeverity(value: string): SeverityText {
+  const upper = value.toUpperCase();
+  if (upper === "TRACE" || upper === "DEBUG" || upper === "INFO" || upper === "WARN" || upper === "ERROR" || upper === "FATAL") {
+    return upper;
+  }
+
+  throw new CliUsageError("Invalid --severity value. Expected trace, debug, info, warn, error, or fatal.");
 }
 
 function requireValue(value: string | undefined, flagName: string): string {

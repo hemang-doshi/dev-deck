@@ -1,3 +1,6 @@
+export * from "./error-blocks.js";
+export * from "./event-store.js";
+export * from "./events.js";
 export * from "./classify-log-line.js";
 export * from "./export-session.js";
 export * from "./format-debug-context.js";

@@ -1,5 +1,10 @@
+import path from "node:path";
+
 import { LogBuffer, DEFAULT_MAX_LOG_LINES } from "./log-buffer.js";
 import type { LogEvent } from "./log-event.js";
+import { EventStore } from "./event-store.js";
+import type { DevDeckEvent } from "./events.js";
+import { serviceLogEvent } from "./events.js";
 import { runHealthProbe } from "./health-probes.js";
 import { ProcessRunner, type ProcessRunnerEvent, type ServiceDefinition } from "./process-runner.js";
 import { waitForReadinessProbe } from "./readiness-probes.js";
@@ -32,8 +37,12 @@ export type ServiceSnapshot = Omit<ServiceDefinition, "env"> & {
 };
 
 export type SessionSnapshot = {
+  sessionId: string;
   project: string;
+  projectRoot?: string;
+  runDirectory?: string;
   startedAt: string;
+  eventCursor: string | null;
   services: ServiceSnapshot[];
   logs: LogEvent[];
 };
@@ -46,17 +55,29 @@ export type SessionEvent =
   | {
       type: "log";
       log: LogEvent;
+    }
+  | {
+      type: "event";
+      event: DevDeckEvent;
     };
 
 export type ServiceSessionOptions = {
+  sessionId?: string;
   project: string;
+  projectRoot?: string;
+  runDirectory?: string;
   services: ServiceDefinition[];
+  eventStore?: EventStore;
   maxLogLines?: number;
 };
 
 export class ServiceSession {
+  readonly sessionId: string;
   readonly project: string;
+  readonly projectRoot?: string;
+  readonly runDirectory?: string;
   readonly startedAt: string;
+  readonly events: EventStore;
 
   #logBuffer: LogBuffer;
   #listeners = new Set<(event: SessionEvent) => void>();
@@ -65,9 +86,20 @@ export class ServiceSession {
   #logReadinessResolvers = new Map<string, () => void>();
 
   constructor(options: ServiceSessionOptions) {
+    this.sessionId = options.sessionId ?? `session-${Date.now().toString(36)}`;
     this.project = options.project;
+    this.projectRoot = options.projectRoot;
+    this.runDirectory = options.runDirectory ?? (
+      options.projectRoot ? path.join(options.projectRoot, ".devdeck", "runs", this.sessionId) : undefined
+    );
     this.startedAt = new Date().toISOString();
     this.#logBuffer = new LogBuffer(options.maxLogLines ?? DEFAULT_MAX_LOG_LINES);
+    this.events = options.eventStore ?? new EventStore({
+      sessionId: this.sessionId,
+      project: this.project,
+      persistPath: this.runDirectory ? path.join(this.runDirectory, "events.jsonl") : undefined,
+    });
+    this.appendCanonicalEvent({ type: "session.started" });
 
     for (const service of options.services) {
       const runner = new ProcessRunner(service);
@@ -102,8 +134,12 @@ export class ServiceSession {
 
   getSnapshot(): SessionSnapshot {
     return {
+      sessionId: this.sessionId,
       project: this.project,
+      projectRoot: this.projectRoot,
+      runDirectory: this.runDirectory,
       startedAt: this.startedAt,
+      eventCursor: this.events.latestCursor(),
       services: [...this.#services.values()],
       logs: this.#logBuffer.snapshot(),
     };
@@ -149,10 +185,12 @@ export class ServiceSession {
   }
 
   async stopAll(): Promise<void> {
+    this.appendCanonicalEvent({ type: "session.stopping" });
     for (const [serviceName, runner] of this.#runners) {
       this.updateService(serviceName, { status: "stopping" });
       await runner.stop();
     }
+    this.appendCanonicalEvent({ type: "session.stopped" });
   }
 
   async restartService(serviceName: string): Promise<void> {
@@ -216,6 +254,11 @@ export class ServiceSession {
   handleRunnerEvent(event: ProcessRunnerEvent): void {
     if (event.type === "start") {
       const current = this.#services.get(event.service);
+      this.appendCanonicalEvent({
+        type: "service.spawned",
+        service: event.service,
+        attributes: { pid: event.pid },
+      });
       this.updateService(event.service, {
         status: "running",
         pid: event.pid,
@@ -230,6 +273,7 @@ export class ServiceSession {
     }
 
     if (event.type === "output") {
+      this.appendCanonicalEvent(serviceLogEvent(event.log));
       this.#logBuffer.append(event.log);
       this.emit({ type: "log", log: event.log });
       this.resolveLogReadiness(event.log);
@@ -255,6 +299,11 @@ export class ServiceSession {
     }
 
     if (event.type === "restart") {
+      this.appendCanonicalEvent({
+        type: "service.pending",
+        service: event.service,
+        attributes: { restartCount: event.count },
+      });
       this.updateService(event.service, {
         restartCount: event.count,
         readiness: "pending",
@@ -467,7 +516,73 @@ export class ServiceSession {
 
     const updated = { ...current, ...patch };
     this.#services.set(serviceName, updated);
+    this.appendServiceSnapshotEvent(current, updated, patch);
     this.emit({ type: "service", service: updated });
+  }
+
+  appendCanonicalEvent(eventInput: Parameters<EventStore["append"]>[0]): DevDeckEvent {
+    const event = this.events.append(eventInput);
+    this.emit({ type: "event", event });
+    return event;
+  }
+
+  appendServiceSnapshotEvent(
+    previous: ServiceSnapshot,
+    updated: ServiceSnapshot,
+    patch: Partial<ServiceSnapshot>,
+  ): void {
+    if (patch.status === "running") {
+      this.appendCanonicalEvent({
+        type: "service.running",
+        service: updated.name,
+        attributes: { pid: updated.pid },
+      });
+    }
+
+    if (patch.status === "blocked" || patch.status === "error") {
+      this.appendCanonicalEvent({
+        type: "service.failed",
+        service: updated.name,
+        severityText: "ERROR",
+        body: updated.lastError ?? undefined,
+        attributes: {
+          status: updated.status,
+          blockedBy: updated.blockedBy,
+        },
+      });
+    }
+
+    if (patch.status === "exited") {
+      this.appendCanonicalEvent({
+        type: updated.lastExitCode === 0 ? "service.exited" : "service.failed",
+        service: updated.name,
+        severityText: updated.lastExitCode === 0 ? "INFO" : "ERROR",
+        attributes: {
+          exitCode: updated.lastExitCode,
+          signal: updated.lastSignal,
+        },
+      });
+    }
+
+    if (patch.readiness === "ready" && previous.readiness !== "ready") {
+      this.appendCanonicalEvent({
+        type: "service.ready",
+        service: updated.name,
+        attributes: { lastReadyAt: updated.lastReadyAt },
+      });
+    }
+
+    if (patch.health && previous.health !== updated.health) {
+      this.appendCanonicalEvent({
+        type: "service.health_changed",
+        service: updated.name,
+        attributes: {
+          previous: previous.health,
+          current: updated.health,
+          checkedAt: updated.lastHealthCheckAt,
+        },
+      });
+    }
   }
 
   emit(event: SessionEvent): void {

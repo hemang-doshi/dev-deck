@@ -22,6 +22,7 @@ export async function runDevCommand(options: DevCommandOptions = {}): Promise<vo
   const loaded = await loadDevdeckConfig(options.cwd);
   const services = await createRuntimeServiceDefinitions(loaded);
   const session = new ServiceSession({
+    projectRoot: loaded.directory,
     project: loaded.config.project,
     services,
   });
@@ -113,6 +114,10 @@ function describeLaunch(service: ServiceDefinition): string {
 function handleSessionEvent(event: SessionEvent, io: CommandIo): void {
   if (event.type === "log") {
     io.stdout(`[${event.log.service}:${event.log.stream}] ${event.log.line}\n`);
+    return;
+  }
+
+  if (event.type === "event") {
     return;
   }
 

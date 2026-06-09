@@ -12,6 +12,7 @@ import { runStartCommand } from "./commands/start.js";
 import { runInitCommand } from "./commands/init.js";
 import {
   runLogsCommand,
+  runEventsCommand,
   runSessionCommand,
   runServiceCommand,
   runSnapshotCommand,
@@ -31,6 +32,7 @@ type CommandName =
   | "agent"
   | "status"
   | "logs"
+  | "events"
   | "snapshot"
   | "stop"
   | "service"
@@ -48,7 +50,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   const io = options.io ?? defaultIo;
 
   if (!command) {
-    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session|config>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|events|snapshot|stop|service|session|config>\n");
     return 1;
   }
 
@@ -109,6 +111,16 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         : 1;
     }
 
+    if (command === "events") {
+      return (await runEventsCommand(argv.slice(1), {
+        cwd: options.cwd,
+        io,
+        fetchImplementation: options.fetchImplementation,
+      }))
+        ? 0
+        : 1;
+    }
+
     if (command === "snapshot") {
       return (await runSnapshotCommand(argv.slice(1), {
         cwd: options.cwd,
@@ -160,7 +172,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
 
     throw new CliUsageError(
       `Unknown command: ${command}`,
-      "Usage: devdeck <init|dev|start|agent|status|logs|snapshot|stop|service|session|config>",
+      "Usage: devdeck <init|dev|start|agent|status|logs|events|snapshot|stop|service|session|config>",
     );
   } catch (error) {
     if (jsonMode) {

@@ -108,6 +108,28 @@ describe("agent commands", () => {
     expect(fixture.actions).toContainEqual({ action: "restart", serviceName: "api" });
   });
 
+  it("prints clean JSONL events from the active session", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer();
+    servers.push(fixture);
+
+    const events = await runWithCapturedIo(
+      ["events", "--jsonl", "--tail", "2", "--url", fixture.url],
+      workspaceDirectory,
+    );
+
+    expect(events.code).toBe(0);
+    expect(events.stderr).toBe("");
+    const lines = events.stdout.trim().split("\n");
+    expect(lines).toHaveLength(2);
+    expect(lines.map((line) => JSON.parse(line).schemaVersion)).toEqual([
+      "devdeck.event.v1",
+      "devdeck.event.v1",
+    ]);
+    expect(events.stdout).not.toContain("schemaVersion\":\"devdeck.response.v1");
+  });
+
   it("wraps snapshot, logs, stop, and service restart json output in the response envelope", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
@@ -566,6 +588,42 @@ async function createFixtureServer(): Promise<{
         totalMatched: 1,
         returned: 1,
         logs: [createSnapshot().logs[1]],
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/v1/events") {
+      respondJson(response, 200, {
+        project: "sample",
+        sessionId: "session-fixture",
+        eventCursor: "evt_000003",
+        returned: 2,
+        events: [
+          {
+            schemaVersion: "devdeck.event.v1",
+            id: "evt_000002",
+            sessionId: "session-fixture",
+            project: "sample",
+            timestamp: "2026-05-23T00:00:02.000Z",
+            observedTimestamp: "2026-05-23T00:00:02.000Z",
+            type: "service.log",
+            service: "api",
+            stream: "stderr",
+            severityText: "ERROR",
+            severityNumber: 17,
+            body: "db connection lost",
+          },
+          {
+            schemaVersion: "devdeck.event.v1",
+            id: "evt_000003",
+            sessionId: "session-fixture",
+            project: "sample",
+            timestamp: "2026-05-23T00:00:03.000Z",
+            observedTimestamp: "2026-05-23T00:00:03.000Z",
+            type: "service.exited",
+            service: "worker",
+          },
+        ],
       });
       return;
     }

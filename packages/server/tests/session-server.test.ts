@@ -229,16 +229,68 @@ describe("createSessionServer", () => {
     await waitFor(() => session.getSnapshot().logs.length >= 3);
 
     const tailResponse = await fetch(`http://127.0.0.1:${port}/api/logs?tail=2`);
+    const sinceTimestampResponse = await fetch(
+      `http://127.0.0.1:${port}/api/logs?since=${encodeURIComponent("2026-01-01T00:00:00.000Z")}`,
+    );
     const invalidTailResponse = await fetch(`http://127.0.0.1:${port}/api/logs?tail=0`);
 
     const tailBody = await tailResponse.json();
+    const sinceTimestampBody = await sinceTimestampResponse.json();
     const invalidTailBody = await invalidTailResponse.json();
 
     expect(tailBody.returned).toBe(2);
     expect(tailBody.logs.map((log: { line: string }) => log.line)).toEqual(["line-2", "line-3"]);
+    expect(sinceTimestampBody.logs.map((log: { line: string }) => log.line)).toEqual(["line-1", "line-2", "line-3"]);
     expect(invalidTailResponse.status).toBe(400);
     expect(invalidTailBody.error).toContain("tail");
 
+    await server.stop();
+  });
+
+  it("serves canonical v1 events, service logs, and stream messages", async () => {
+    const workspaceDirectory = await createWorkspace(tempDirectories);
+    const session = new ServiceSession({
+      sessionId: "session-v1",
+      project: "sample",
+      services: [
+        {
+          name: "api",
+          command: "node -e \"console.log('ready'); setTimeout(() => process.exit(0), 20)\"",
+          cwd: process.cwd(),
+        },
+      ],
+    });
+    const server = createSessionServer({
+      dashboardAssetsDirectory: workspaceDirectory,
+      session,
+      port: 0,
+    });
+    const { port } = await server.start();
+    const websocket = new WebSocket(`ws://127.0.0.1:${port}/api/v1/stream`);
+    const streamMessages: any[] = [];
+
+    websocket.on("message", (message) => {
+      streamMessages.push(JSON.parse(message.toString("utf8")));
+    });
+
+    await waitFor(() => websocket.readyState === WebSocket.OPEN);
+    await session.startAll();
+    await waitFor(() => session.events.query({ type: "service.log" }).length > 0);
+
+    const eventsResponse = await fetch(`http://127.0.0.1:${port}/api/v1/events?tail=10`);
+    const logsResponse = await fetch(`http://127.0.0.1:${port}/api/v1/services/api/logs?tail=5`);
+    const sessionResponse = await fetch(`http://127.0.0.1:${port}/api/v1/session`);
+
+    const events = await eventsResponse.json();
+    const logs = await logsResponse.json();
+    const sessionBody = await sessionResponse.json();
+
+    expect(events.events.some((event: { type: string }) => event.type === "service.log")).toBe(true);
+    expect(logs.logs.map((log: { line: string }) => log.line)).toContain("ready");
+    expect(sessionBody.sessionId).toBe("session-v1");
+    expect(streamMessages.some((message) => message.type === "event" && message.event.type === "service.log")).toBe(true);
+
+    websocket.close();
     await server.stop();
   });
 });
