@@ -1,0 +1,60 @@
+$ node "<repo>/packages/cli/dist/index.js" start
+Starting DevDeck in the background...
+DevDeck started successfully in the background!
+PID: <redacted>
+Dashboard: http://127.0.0.1:4545
+Logs: <repo>/benchmarks/fixtures/node-api-worker/.devdeck/devdeck.log
+
+$ node "<repo>/packages/cli/dist/index.js" status --json
+{"schemaVersion":"devdeck.response.v1","ok":true,"command":"status","requestId":"req_<redacted>","project":"devdeck-benchmark-node-api-worker","sessionId":null,"timestamp":"2026-06-12T20:05:15.717Z","summary":"DevDeck session is running with 2 services.","result":{"state":"running","services":[{"name":"api","command":"npm run api","cwd":"<repo>/benchmarks/fixtures/node-api-worker","group":"backend","port":3100,"envFiles":[],"requiredEnv":[],"dependsOn":{},"healthProbe":{"type":"tcp","host":"127.0.0.1","port":3100},"restartPolicy":{"mode":"never"},"links":[{"label":"api","url":"http://127.0.0.1:3100"}],"health":"unreachable","readiness":"ready","status":"running","pid":<redacted>,"restartCount":0,"blockedBy":[],"lastReadyAt":"2026-06-12T20:05:15.512Z","lastHealthCheckAt":"2026-06-12T20:05:15.515Z","lastExitCode":null,"lastSignal":null,"lastError":null},{"name":"worker","command":"npm run worker","cwd":"<repo>/benchmarks/fixtures/node-api-worker","group":"backend","envFiles":[],"requiredEnv":[],"dependsOn":{},"restartPolicy":{"mode":"never"},"links":[],"health":"unknown","readiness":"ready","status":"running","pid":<redacted>,"restartCount":0,"blockedBy":[],"lastReadyAt":"2026-06-12T20:05:15.512Z","lastHealthCheckAt":"2026-06-12T20:05:15.514Z","lastExitCode":null,"lastSignal":null,"lastError":null}],"startedAt":"2026-06-12T20:05:15.502Z"},"error":null,"nextActions":[]}
+
+$ node "<repo>/packages/cli/dist/index.js" logs api --tail 80
+Project: devdeck-benchmark-node-api-worker
+Matched: 6
+Returned: 6
+2026-06-12T20:05:15.628Z api INFO stdout 
+2026-06-12T20:05:15.628Z api INFO stdout > api
+2026-06-12T20:05:15.628Z api INFO stdout > node src/api.js
+2026-06-12T20:05:15.628Z api INFO stdout 
+2026-06-12T20:05:15.714Z api INFO stdout api listening on http://127.0.0.1:3100
+2026-06-12T20:05:15.714Z api INFO stdout health endpoint ready at http://127.0.0.1:3100/health
+
+$ node "<repo>/packages/cli/dist/index.js" logs worker --tail 80
+Project: devdeck-benchmark-node-api-worker
+Matched: 5
+Returned: 5
+2026-06-12T20:05:15.629Z worker INFO stdout 
+2026-06-12T20:05:15.629Z worker INFO stdout > worker
+2026-06-12T20:05:15.629Z worker INFO stdout > node src/worker.js
+2026-06-12T20:05:15.629Z worker INFO stdout 
+2026-06-12T20:05:15.684Z worker INFO stdout worker booted
+
+$ node "<repo>/packages/cli/dist/index.js" snapshot
+# Agent DevDeck Snapshot
+
+Project: devdeck-benchmark-node-api-worker
+Started: 2026-06-12T20:05:15.502Z
+
+## Services
+- api: status=running, readiness=ready, health=unreachable, blockedBy=none, restarts=0, error=none
+- worker: status=running, readiness=ready, health=unknown, blockedBy=none, restarts=0, error=none
+
+## Logs
+- 2026-06-12T20:05:15.628Z [api] INFO 
+- 2026-06-12T20:05:15.628Z [api] INFO > api
+- 2026-06-12T20:05:15.628Z [api] INFO > node src/api.js
+- 2026-06-12T20:05:15.628Z [api] INFO 
+- 2026-06-12T20:05:15.629Z [worker] INFO 
+- 2026-06-12T20:05:15.629Z [worker] INFO > worker
+- 2026-06-12T20:05:15.629Z [worker] INFO > node src/worker.js
+- 2026-06-12T20:05:15.629Z [worker] INFO 
+- 2026-06-12T20:05:15.684Z [worker] INFO worker booted
+- 2026-06-12T20:05:15.714Z [api] INFO api listening on http://127.0.0.1:3100
+- 2026-06-12T20:05:15.714Z [api] INFO health endpoint ready at http://127.0.0.1:3100/health
+
+$ node "<repo>/packages/cli/dist/index.js" service restart api
+Requested restart for api
+
+$ node "<repo>/packages/cli/dist/index.js" stop
+Requested stop-session
+

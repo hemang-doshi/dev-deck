@@ -1,0 +1,22 @@
+{
+  "tokenizer": "approx-char-div-4",
+  "countedFiles": {
+    "baseline": [
+      "baseline/transcript.txt"
+    ],
+    "devdeck": [
+      "devdeck/transcript.txt"
+    ]
+  },
+  "formula": "ceil(character_count / 4)",
+  "baseline": {
+    "characters": 626,
+    "approxTokens": 157
+  },
+  "devdeck": {
+    "characters": 4051,
+    "approxTokens": 1013
+  },
+  "savingsPercent": -545.22,
+  "caveat": "Approximate token counting only. Not model-specific."
+}

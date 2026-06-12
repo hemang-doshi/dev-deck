@@ -126,10 +126,13 @@ services:
 
 ## Token Savings Proof
 
-DevDeck is designed to reduce agent-visible runtime/debugging context by replacing raw terminal sprawl with bounded commands such as `status`, `logs`, and `snapshot`.
+DevDeck includes a reproducible benchmark harness under `benchmarks/`.
 
-The benchmark methodology lives in `Docs/benchmarks/methodology.md`.
-Reproducible v1.3 benchmark results will be published in a future slice.
+The first published report is available here:
+
+`benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md`
+
+Current benchmark results are fixture-specific and use approximate token counting. We do not claim universal savings yet.
 
 ## Current Status: v1.3
 

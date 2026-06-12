@@ -1,0 +1,41 @@
+$ npm run api
+spawned pid <redacted>
+
+$ npm run worker
+spawned pid <redacted>
+
+$ curl http://127.0.0.1:3100/health
+HTTP 200
+{"ok":true,"service":"api"}
+
+$ ps -p <api-pid>,<worker-pid> -o pid=,state=,command=
+<pid> S    npm run api   
+<pid> S    npm run worker
+
+$ tail -n 20 api.log
+
+> api
+> node src/api.js
+
+api listening on http://127.0.0.1:3100
+health endpoint ready at http://127.0.0.1:3100/health
+
+$ tail -n 20 worker.log
+
+> worker
+> node src/worker.js
+
+worker booted
+worker heartbeat 1
+worker heartbeat 2
+
+$ kill <api-pid>
+sent SIGTERM
+
+$ npm run api
+respawned pid <redacted>
+
+$ curl http://127.0.0.1:3100/health
+HTTP 200
+{"ok":true,"service":"api"}
+

@@ -1,3 +1,4 @@
+import net from "node:net";
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
 import { access, appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -12,6 +13,7 @@ export const repoRoot = path.resolve(__dirname, "../..");
 export const benchmarksRoot = path.join(repoRoot, "benchmarks");
 export const fixturesRoot = path.join(benchmarksRoot, "fixtures");
 export const resultsRoot = path.join(benchmarksRoot, "results");
+export const cliDistPath = path.join(repoRoot, "packages/cli/dist/index.js");
 
 export function timestampId() {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -32,6 +34,22 @@ export function getFixtureDirectory(fixture = "node-api-worker") {
   return path.join(fixturesRoot, fixture);
 }
 
+export async function isPortFree(port, host = "127.0.0.1") {
+  return await new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once("error", () => {
+      resolve(false);
+    });
+
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+
+    server.listen(port, host);
+  });
+}
+
 export function getNodeVersion() {
   return process.version;
 }
@@ -44,9 +62,138 @@ export function getEnvironmentSummary() {
   };
 }
 
-export async function appendTranscript(transcriptPath, command, output) {
+export function approximateTokens(characters) {
+  return Math.ceil(characters / 4);
+}
+
+export function formatTranscriptEntry(command, output) {
   const content = [`$ ${command}`, output.trimEnd(), ""].join("\n");
-  await appendFile(transcriptPath, `${content}\n`, "utf8");
+  return `${content}\n`;
+}
+
+export async function appendTranscript(transcriptPath, command, output) {
+  const content = formatTranscriptEntry(command, output);
+  await appendFile(transcriptPath, content, "utf8");
+  return content;
+}
+
+export function createCommandEvent({
+  id,
+  mode,
+  scenario,
+  commandLabel,
+  command,
+  transcriptCommand = commandLabel,
+  category,
+  output,
+  startedAt,
+  endedAt,
+  exitCode,
+}) {
+  const characters = formatTranscriptEntry(transcriptCommand, output).length;
+
+  return {
+    id,
+    mode,
+    scenario,
+    commandLabel,
+    command,
+    category,
+    characters,
+    approxTokens: approximateTokens(characters),
+    startedAt,
+    endedAt,
+    exitCode,
+  };
+}
+
+export async function recordCommandEvent({
+  events,
+  transcriptPath,
+  recordTranscript = true,
+  ...eventData
+}) {
+  const event = createCommandEvent(eventData);
+
+  if (recordTranscript) {
+    await appendTranscript(
+      transcriptPath,
+      eventData.transcriptCommand ?? event.commandLabel,
+      eventData.output,
+    );
+    events.push(event);
+  }
+
+  return event;
+}
+
+export async function writeCommandEvents(directory, events) {
+  const commandEventsPath = path.join(directory, "command-events.json");
+  await writeJson(commandEventsPath, events);
+  return commandEventsPath;
+}
+
+export async function listRunModes(runDir) {
+  const entries = await import("node:fs/promises").then(({ readdir }) =>
+    readdir(runDir, { withFileTypes: true }),
+  );
+
+  const modes = [];
+  for (const entry of entries) {
+    if (
+      entry.isDirectory() &&
+      await fileExists(path.join(runDir, entry.name, "transcript.txt"))
+    ) {
+      modes.push(entry.name);
+    }
+  }
+
+  const preferredOrder = [
+    "baseline",
+    "devdeck",
+    "devdeck-full",
+    "devdeck-status-only",
+    "devdeck-snapshot-only",
+    "devdeck-logs-only",
+  ];
+  return modes.sort((left, right) => {
+    const leftIndex = preferredOrder.indexOf(left);
+    const rightIndex = preferredOrder.indexOf(right);
+    if (leftIndex !== -1 || rightIndex !== -1) {
+      return (leftIndex === -1 ? preferredOrder.length : leftIndex) -
+        (rightIndex === -1 ? preferredOrder.length : rightIndex);
+    }
+    return left.localeCompare(right);
+  });
+}
+
+export async function writeCommandAttribution(runDir, requestedModes) {
+  const modes = requestedModes ?? await listRunModes(runDir);
+  const attribution = {
+    tokenizer: "approx-char-div-4",
+    formula: "ceil(character_count / 4)",
+    modes: {},
+  };
+
+  for (const mode of modes) {
+    const eventsPath = path.join(runDir, mode, "command-events.json");
+    if (!(await fileExists(eventsPath))) {
+      continue;
+    }
+
+    const commands = await readJson(eventsPath);
+    const characters = commands.reduce((total, event) => total + event.characters, 0);
+
+    attribution.modes[mode] = {
+      characters,
+      approxTokens: approximateTokens(characters),
+      commands,
+    };
+  }
+
+  const attributionPath = path.join(runDir, "command-attribution.json");
+  await writeJson(attributionPath, attribution);
+  return attribution;
 }
 
 export async function runCommand(command, options = {}) {
