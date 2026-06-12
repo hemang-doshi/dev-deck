@@ -57,6 +57,8 @@ v0 uses approximate token counting based on character count divided by four.
 
 Future versions may add model-specific tokenizers.
 
+Scenario-specific guidance, including how to interpret negative results, is documented in [Interpreting Benchmark Results](interpreting-results.md).
+
 ## First Published Fixture
 
 The first benchmark report is:
@@ -72,6 +74,7 @@ It uses the `node-api-worker` fixture and approximate token counting.
 - Record exact commands used.
 - Preserve raw transcripts for auditability.
 - Report methodology separately from conclusions.
+- Preserve per-command output attribution so transcript overhead can be traced to specific commands.
 
 ## Required Disclosure
 

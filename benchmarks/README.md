@@ -18,9 +18,15 @@ npm install
 npm run build
 npm run benchmark:validate
 npm run benchmark:v0
+npm run benchmark:realism
+node benchmarks/scripts/run-scenario.mjs api-crash --mode devdeck-full
 ```
 
-The one-command runner writes a timestamped directory under `benchmarks/results/` and performs the baseline workflow, the DevDeck workflow, approximate token counting, and summary generation.
+`benchmark:v0` preserves the first simple fixture report.
+
+`benchmark:realism` runs scenario-based comparisons that are closer to DevDeck's actual product claim: reducing context growth during noisy or failing local development sessions.
+
+Each scenario run writes raw transcripts, per-command events, command attribution, approximate token counts, and a scenario-aware summary under `benchmarks/results/`. The realism runner adds `matrix-results.json` and `matrix-summary.md`.
 
 ## Published Reports
 
@@ -55,3 +61,5 @@ Do not publish benchmark numbers without including:
 
 Committed proof artifacts belong under `benchmarks/reports/`.
 Generated local runs stay under `benchmarks/results/`.
+
+See [Interpreting Benchmark Results](../Docs/benchmarks/interpreting-results.md) before drawing conclusions from a single fixture or scenario.
