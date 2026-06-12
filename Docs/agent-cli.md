@@ -7,7 +7,7 @@ Agent DevDeck keeps the existing `devdeck` binary and `devdeck.yml` config forma
 - `devdeck dev` remains the foreground session runner.
 - When the session starts, DevDeck writes `.devdeck/session.json` with the active local URL and process metadata.
 - Agent-facing commands read that runtime file first and fall back to `http://127.0.0.1:4545` when no session file exists.
-- All commands print concise text by default and support `--json` where structured output is useful.
+- All commands print concise text by default, support `--agent` for compact diagnosis-oriented output, and support `--json` where structured output is useful.
 
 ## Commands
 
@@ -15,9 +15,9 @@ Agent DevDeck keeps the existing `devdeck` binary and `devdeck.yml` config forma
 devdeck agent setup
 devdeck dev [--port PORT]
 devdeck start [--port PORT]
-devdeck status [--json] [--url URL]
-devdeck logs [service] [--tail 80] [--severity info|warning|error] [--grep text] [--json] [--url URL]
-devdeck snapshot [--tail 120] [--json] [--url URL]
+devdeck status [--agent|--json] [--url URL]
+devdeck logs [service] [--tail 80] [--severity info|warning|error] [--grep text] [--agent|--json] [--url URL]
+devdeck snapshot [--tail 120] [--agent|--json] [--url URL]
 devdeck stop [--url URL]
 devdeck service start <name> [--url URL]
 devdeck service stop <name> [--url URL]
@@ -29,8 +29,14 @@ devdeck service restart <name> [--url URL]
 1. Run `devdeck agent setup` to print the agent-readable setup prompt and starter YAML.
 2. Create or update `devdeck.yml` for the repository.
 3. Start the local stack with `devdeck dev` or `devdeck dev --port 5000`.
-4. Query state with `devdeck status`, inspect targeted logs with `devdeck logs`, and collect a bounded markdown summary with `devdeck snapshot`.
+4. Query state with `devdeck status --agent`, inspect targeted logs with `devdeck logs <service> --agent`, and collect a compact diagnosis packet with `devdeck snapshot --agent`.
 5. Stop the session with `devdeck stop` or restart a single service with `devdeck service restart <name>`.
+
+## Output modes
+
+- Use `--agent` for compact next-action context.
+- Use `--json` for full structured state.
+- Use default output for human-readable summaries.
 
 ## Session file
 

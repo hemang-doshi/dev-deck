@@ -8,20 +8,21 @@ import { validateV0 } from "./validate-v0.mjs";
 const matrix = {
   "happy-path": [
     "baseline",
-    "devdeck-full",
     "devdeck-status-only",
-    "devdeck-snapshot-only",
+    "devdeck-agent-status",
+    "devdeck-agent-snapshot",
   ],
   "noisy-worker": [
     "baseline",
-    "devdeck-full",
     "devdeck-logs-only",
-    "devdeck-snapshot-only",
+    "devdeck-agent-logs",
+    "devdeck-agent-snapshot",
   ],
   "api-crash": [
     "baseline",
-    "devdeck-full",
     "devdeck-status-only",
+    "devdeck-agent-status",
+    "devdeck-agent-full",
   ],
 };
 

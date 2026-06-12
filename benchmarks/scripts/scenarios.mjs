@@ -24,6 +24,10 @@ export const supportedModes = [
   "devdeck-status-only",
   "devdeck-snapshot-only",
   "devdeck-logs-only",
+  "devdeck-agent-status",
+  "devdeck-agent-snapshot",
+  "devdeck-agent-logs",
+  "devdeck-agent-full",
 ];
 
 export function getScenarioDefinition(name) {

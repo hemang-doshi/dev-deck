@@ -165,6 +165,10 @@ export async function listRunModes(runDir) {
     "devdeck-status-only",
     "devdeck-snapshot-only",
     "devdeck-logs-only",
+    "devdeck-agent-status",
+    "devdeck-agent-snapshot",
+    "devdeck-agent-logs",
+    "devdeck-agent-full",
   ];
   return modes.sort((left, right) => {
     const leftIndex = preferredOrder.indexOf(left);

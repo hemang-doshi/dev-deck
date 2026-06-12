@@ -306,6 +306,43 @@ async function runBaselineMode(context) {
 }
 
 function devDeckSteps(scenario, mode) {
+  if (mode === "devdeck-agent-status") {
+    return scenario === "api-crash"
+      ? ["start", "status --agent", "sleep:6000", "status --agent", "service restart api", "status --agent", "stop"]
+      : ["start", "status --agent", "service restart api", "status --agent", "stop"];
+  }
+  if (mode === "devdeck-agent-snapshot") {
+    if (scenario === "noisy-worker") {
+      return ["start", "sleep:6500", "snapshot --agent", "stop"];
+    }
+    return ["start", "snapshot --agent", "service restart api", "snapshot --agent", "stop"];
+  }
+  if (mode === "devdeck-agent-logs") {
+    if (scenario === "noisy-worker") {
+      return ["start", "sleep:6500", "logs worker --agent --grep warning --tail 30", "status --agent", "stop"];
+    }
+    return [
+      "start",
+      "status --agent",
+      "sleep:6000",
+      "logs api --agent --tail 40 --severity error",
+      "service restart api",
+      "status --agent",
+      "stop",
+    ];
+  }
+  if (mode === "devdeck-agent-full") {
+    return [
+      "start",
+      "status --agent",
+      "sleep:6000",
+      "snapshot --agent",
+      "logs api --agent --tail 40 --severity error",
+      "service restart api",
+      "status --agent",
+      "stop",
+    ];
+  }
   if (mode === "devdeck-status-only") {
     return scenario === "api-crash"
       ? ["start", "status --json", "sleep:6000", "status --json", "service restart api", "status --json", "stop"]

@@ -20,11 +20,12 @@ npm run benchmark:validate
 npm run benchmark:v0
 npm run benchmark:realism
 node benchmarks/scripts/run-scenario.mjs api-crash --mode devdeck-full
+node benchmarks/scripts/run-scenario.mjs api-crash --mode devdeck-agent-full
 ```
 
 `benchmark:v0` preserves the first simple fixture report.
 
-`benchmark:realism` runs scenario-based comparisons that are closer to DevDeck's actual product claim: reducing context growth during noisy or failing local development sessions.
+`benchmark:realism` runs scenario-based comparisons that are closer to DevDeck's actual product claim: reducing context growth during noisy or failing local development sessions. It now compares older full-state modes with compact `--agent` modes.
 
 Each scenario run writes raw transcripts, per-command tokenizer attribution, local real and approximate token counts, per-mode evaluation results, and a scenario-aware summary under `benchmarks/results/`. The realism runner adds `matrix-results.json` and `matrix-summary.md`.
 

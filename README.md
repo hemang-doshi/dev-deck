@@ -71,10 +71,11 @@ When an AI coding agent is operating in a repo that uses DevDeck, the default lo
 
 1. Install the package if it is not already present.
 2. Run `npx devdeck start` instead of starting raw long-running processes.
-3. Use `npx devdeck status --json` for compact machine-readable state.
-4. Use `npx devdeck logs <service> --tail 80` for bounded debugging context.
-5. Run `npx devdeck snapshot` before asking a human for extra diagnostics.
-6. Stop the deck with `npx devdeck stop` when the task is complete.
+3. Use `npx devdeck status --agent` for compact diagnosis-oriented state.
+4. Use `npx devdeck logs <service> --agent --tail 80` for bounded debugging context.
+5. Run `npx devdeck snapshot --agent` before asking a human for extra diagnostics.
+6. Switch to `--json` only when full structured state is required.
+7. Stop the deck with `npx devdeck stop` when the task is complete.
 
 This keeps runtime coordination out of sprawling terminal transcripts and inside a stable CLI contract.
 
@@ -97,9 +98,10 @@ For humans, DevDeck is the same control plane with a simpler mental model:
 | `npx devdeck dev` | Start DevDeck in the foreground |
 | `npx devdeck start` | Start DevDeck in the background |
 | `npx devdeck status` | Inspect current service state |
+| `npx devdeck status --agent` | Inspect compact agent-oriented state |
 | `npx devdeck status --json` | Inspect machine-readable service state |
-| `npx devdeck logs <service> --tail 80` | Read bounded logs for one service |
-| `npx devdeck snapshot` | Capture a compact stack snapshot |
+| `npx devdeck logs <service> --agent --tail 80` | Read compact evidence-oriented logs for one service |
+| `npx devdeck snapshot --agent` | Capture a compact diagnosis packet |
 | `npx devdeck service restart <name>` | Restart one service |
 | `npx devdeck stop` | Stop the full deck |
 

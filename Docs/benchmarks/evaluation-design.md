@@ -25,6 +25,8 @@ The scripted evaluator compares generated transcripts, command sequences, observ
 
 These checks are intentionally deterministic. They verify that a benchmark run completed the scripted task; they do not score model reasoning quality.
 
+Current realism runs compare older full-state modes with compact `--agent` modes so transcript reduction can be measured without changing the scripted recovery task.
+
 ## Interpretation
 
 DevDeck should not be judged only by whether one command transcript is shorter than a clean manual shell transcript. Happy-path orchestration may add overhead. The more relevant evaluation includes whether bounded commands control repeated context growth and support diagnosis, recovery, and final verification under noisy or failing conditions.
