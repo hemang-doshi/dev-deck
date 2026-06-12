@@ -1,0 +1,14 @@
+{
+  "id": "happy-path",
+  "description": "Happy-path startup and routine service inspection.",
+  "measures": [
+    "orchestration overhead",
+    "state observation overhead"
+  ],
+  "expected": {
+    "failedService": null,
+    "rootCauseContains": null,
+    "recoveryAction": "restart api",
+    "finalState": "services running"
+  }
+}

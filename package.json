@@ -8,13 +8,18 @@
   "scripts": {
     "build": "npm run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
     "test": "npm run test --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
-    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard"
+    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
+    "benchmark:test": "node --test benchmarks/tests/*.test.mjs",
+    "benchmark:validate": "node benchmarks/scripts/validate-v0.mjs",
+    "benchmark:v0": "node benchmarks/scripts/run-v0.mjs",
+    "benchmark:realism": "node benchmarks/scripts/run-realism-v1.mjs"
   },
   "devDependencies": {
     "@adobe/css-tools": "4.4.4",
     "@types/node": "^24.10.1",
     "@types/ws": "^8.18.1",
     "esbuild": "^0.28.0",
+    "tiktoken": "^1.0.22",
     "typescript": "^5.9.3",
     "vitest": "^4.0.7"
   }

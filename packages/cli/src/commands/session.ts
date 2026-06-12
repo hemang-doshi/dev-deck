@@ -4,7 +4,7 @@ import { getEvents, getLogs, getSnapshot, postAction, streamEvents, type AgentCl
 import { createDevDeckErrorPayload, type DevDeckErrorPayload } from "../agent-errors.js";
 import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
 import { CliUsageError } from "../cli-errors.js";
-import { formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
+import { formatAgentLogs, formatAgentSnapshot, formatAgentStatus, formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
 import { clearStaleSession, inspectSession, type SessionInspection } from "../session-inspector.js";
 import type { CommandIo } from "./init.js";
 
@@ -41,6 +41,8 @@ export async function runStatusCommand(
         ),
         getWriter(options.io),
       );
+    } else if (flags.agent) {
+      writeOutput(options.io, formatAgentStatus(snapshot));
     } else {
       writeOutput(options.io, formatStatus(snapshot));
     }
@@ -80,6 +82,7 @@ export async function runLogsCommand(
   let stream = false;
   let jsonl = false;
   let json = false;
+  let agent = false;
   let url: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
@@ -149,6 +152,11 @@ export async function runLogsCommand(
       continue;
     }
 
+    if (arg === "--agent") {
+      agent = true;
+      continue;
+    }
+
     if (arg === "--jsonl") {
       jsonl = true;
       continue;
@@ -164,6 +172,14 @@ export async function runLogsCommand(
   }
 
   try {
+    if (json && agent) {
+      throw new CliUsageError("Cannot combine --json and --agent.");
+    }
+
+    if (agent && (stream || jsonl)) {
+      throw new CliUsageError("Cannot combine --agent with --stream or --jsonl.");
+    }
+
     if (stream) {
       if (!jsonl) {
         throw new CliUsageError("Usage: devdeck logs [service] --stream --jsonl [--url URL]");
@@ -219,6 +235,8 @@ export async function runLogsCommand(
         ),
         getWriter(options.io),
       );
+    } else if (agent) {
+      writeOutput(options.io, formatAgentLogs(result));
     } else {
       writeOutput(options.io, formatLogs(result));
     }
@@ -398,6 +416,8 @@ export async function runSnapshotCommand(
         ),
         getWriter(options.io),
       );
+    } else if (flags.agent) {
+      writeOutput(options.io, formatAgentSnapshot(snapshot, { tail }));
     } else {
       writeOutput(options.io, formatSnapshot(snapshot, tail));
     }
@@ -663,8 +683,9 @@ export async function runSessionCommand(
   throw new CliUsageError("Usage: devdeck session <inspect|clear-stale> [--json]");
 }
 
-function parseCommonFlags(args: string[]): { json: boolean; url?: string } {
+function parseCommonFlags(args: string[]): { json: boolean; agent: boolean; url?: string } {
   let json = false;
+  let agent = false;
   let url: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
@@ -672,6 +693,11 @@ function parseCommonFlags(args: string[]): { json: boolean; url?: string } {
 
     if (arg === "--json") {
       json = true;
+      continue;
+    }
+
+    if (arg === "--agent") {
+      agent = true;
       continue;
     }
 
@@ -689,7 +715,11 @@ function parseCommonFlags(args: string[]): { json: boolean; url?: string } {
     throw new CliUsageError(`Unknown option: ${arg}`);
   }
 
-  return { json, url };
+  if (json && agent) {
+    throw new CliUsageError("Cannot combine --json and --agent.");
+  }
+
+  return { json, agent, url };
 }
 
 function parseOptionalTail(args: string[]): number {

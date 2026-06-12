@@ -1,5 +1,10 @@
 import type { SessionSnapshot } from "@devdeck/core";
 import type { AgentLogsResponse } from "./agent-client.js";
+import {
+  formatAgentLogs as formatCompactAgentLogs,
+  formatAgentSnapshot as formatCompactAgentSnapshot,
+  formatAgentStatus as formatCompactAgentStatus,
+} from "./agent-output/line-format.js";
 
 export function formatStatus(snapshot: SessionSnapshot): string {
   const lines = [
@@ -51,3 +56,7 @@ export function formatSnapshot(snapshot: SessionSnapshot, tail: number): string 
 
   return lines.join("\n");
 }
+
+export const formatAgentStatus = formatCompactAgentStatus;
+export const formatAgentSnapshot = formatCompactAgentSnapshot;
+export const formatAgentLogs = formatCompactAgentLogs;

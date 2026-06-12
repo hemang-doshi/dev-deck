@@ -1,41 +1,52 @@
 # <img src="assets/icon.png" width="48" height="48" valign="middle" /> Agent DevDeck
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+> The local runtime control plane for AI coding agents.
 
-**Agent DevDeck** is a local-first development control plane for starting, stopping, inspecting, and debugging multi-service local stacks. It features a bounded CLI and web dashboard, designed from the ground up to be **agent-first** (easy for AI coding agents to control with minimum token overhead) and **human-friendly**.
+Agents are great at code.
+They are terrible at babysitting terminals.
 
----
+DevDeck gives agents one bounded CLI to start, stop, inspect, debug, and snapshot local multi-service stacks without flooding model context with raw terminal noise.
 
-## Features
+## Why DevDeck Exists
 
-- **Agent-First Design:** Easy non-blocking background running via `devdeck start` and token-efficient state snapshots via `devdeck snapshot`.
-- **Diagnostic Error System:** Built-in error numbering (`[DD-ERR-XXXX]`) and stderr hints for rapid self-healing by AI agents and humans alike.
-- **Service Orchestration:** Launch and manage a multi-service stack with a single `devdeck.yml` config file.
-- **Live Web Dashboard:** Stream logs and control processes in a clean web UI.
-- **Zero Hoisting/Self-Contained:** Published as a single, compiled npm package containing all logic and dashboard assets for fast setup.
+Modern local development stacks rarely fit in one terminal. Frontends, APIs, workers, queues, databases, and supporting services all need coordination, and that coordination gets noisy fast.
 
----
+DevDeck reduces that noise. It gives humans and agents one runtime control plane for local stacks so they can:
 
-## 🚀 Quick Start
+- start everything from one config
+- inspect machine-readable state
+- fetch bounded logs instead of dumping full terminal buffers
+- snapshot the current deck before escalating a debugging problem
+- restart only the service that changed
 
-### 1. Installation
+## What DevDeck Is / Is Not
 
-Install DevDeck directly in your software projects:
+DevDeck is a local-first CLI for orchestrating and debugging multi-service development stacks.
+
+DevDeck does not replace npm, Docker Compose, Turborepo, or your app framework.
+
+It gives agents and humans a bounded control plane over those processes.
+
+## Install
+
+Install the published CLI package locally in your project:
 
 ```bash
-npm install -D devdeck
+npm install -D @hemangdoshi/devdeck
 ```
 
-### 2. Initialize Config
+The package exposes the `devdeck` binary, so you run it with `npx devdeck`.
 
-Generate a starting `devdeck.yml` configuration:
+## 60-Second Quick Start
 
 ```bash
+npm install -D @hemangdoshi/devdeck
 npx devdeck init
+npx devdeck start
+npx devdeck status
 ```
 
-Example config:
+Starter `devdeck.yml`:
 
 ```yaml
 project: my-awesome-app
@@ -52,42 +63,105 @@ services:
     group: backend
 ```
 
-### 3. Start DevDeck
+Open `http://127.0.0.1:4545` to use the local dashboard.
 
-To start in the foreground (blocks shell, displays logs):
+## Agent-First Workflow
 
-```bash
-npx devdeck dev
+When an AI coding agent is operating in a repo that uses DevDeck, the default loop is:
+
+1. Install the package if it is not already present.
+2. Run `npx devdeck start` instead of starting raw long-running processes.
+3. Use `npx devdeck status --agent` for compact diagnosis-oriented state.
+4. Use `npx devdeck logs <service> --agent --tail 80` for bounded debugging context.
+5. Run `npx devdeck snapshot --agent` before asking a human for extra diagnostics.
+6. Switch to `--json` only when full structured state is required.
+7. Stop the deck with `npx devdeck stop` when the task is complete.
+
+This keeps runtime coordination out of sprawling terminal transcripts and inside a stable CLI contract.
+
+## Human Workflow
+
+For humans, DevDeck is the same control plane with a simpler mental model:
+
+1. Define your services once in `devdeck.yml`.
+2. Start the full stack with `npx devdeck start` or `npx devdeck dev`.
+3. Inspect health with `npx devdeck status`.
+4. Read bounded logs with `npx devdeck logs`.
+5. Restart only what you need with `npx devdeck service restart <name>`.
+6. Stop everything cleanly with `npx devdeck stop`.
+
+## Core Commands
+
+| Command | Purpose |
+|---|---|
+| `npx devdeck init` | Generate a starter `devdeck.yml` |
+| `npx devdeck dev` | Start DevDeck in the foreground |
+| `npx devdeck start` | Start DevDeck in the background |
+| `npx devdeck status` | Inspect current service state |
+| `npx devdeck status --agent` | Inspect compact agent-oriented state |
+| `npx devdeck status --json` | Inspect machine-readable service state |
+| `npx devdeck logs <service> --agent --tail 80` | Read compact evidence-oriented logs for one service |
+| `npx devdeck snapshot --agent` | Capture a compact diagnosis packet |
+| `npx devdeck service restart <name>` | Restart one service |
+| `npx devdeck stop` | Stop the full deck |
+
+## Example `devdeck.yml`
+
+```yaml
+project: my-microservices-app
+services:
+  frontend:
+    command: npm run dev
+    cwd: ./apps/frontend
+    port: 5173
+    group: frontend
+  api:
+    command: npm run dev
+    cwd: ./apps/api
+    port: 3000
+    group: backend
+  worker:
+    command: npm run worker
+    cwd: ./apps/api
+    group: backend
 ```
 
-To start in the background (detached daemon mode, ideal for AI agents and automation):
+## Token Savings Proof
 
-```bash
-npx devdeck start
-```
+DevDeck includes a reproducible benchmark harness under `benchmarks/`.
 
-### 4. Monitor & Control
+The first published report is available here:
 
-Once running, use the bounded CLI commands:
+`benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md`
 
-- **Check status:** `npx devdeck status`
-- **Query logs:** `npx devdeck logs api --tail 50`
-- **Check health snapshot:** `npx devdeck snapshot`
-- **Restart service:** `npx devdeck service restart api`
-- **Stop everything:** `npx devdeck stop`
+The first published report is a historical approximate-only result. Current local harness runs use named real tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
-Open **`http://127.0.0.1:4545`** to view the live local web dashboard.
+## Current Status: v1.3
 
----
+DevDeck v1.3 ships the core OSS foundation:
 
-## 📖 Guides & Onboarding
+- local CLI orchestration for multi-service stacks
+- agent-friendly bounded inspection commands
+- structured `DD-ERR-XXXX` diagnostics
+- a local dashboard for visual monitoring and control
 
-- **[LLMs.md](LLMs.md)**: Agent-first onboarding prompt and instructions. Copy-paste directly into your agent to let it configure and control DevDeck.
-- **[HUMANs.md](HUMANs.md)**: Human developer onboarding, command lists, and custom setup guide.
-- **[Docs/](Docs/README.md)**: Full reference manual covering configuration schemas, architecture, and advanced options.
+This slice focuses on productization, onboarding, and repository trust signals rather than runtime feature changes.
 
----
+## Roadmap
 
-## ⚖️ License
+- publish reproducible token-savings benchmarks
+- deepen configuration and architecture docs
+- expand launch assets and OSS examples
+- refine agent contracts and non-interactive workflows
 
-Distributed under the MIT License. See `LICENSE` for more information.
+## Contributing
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read:
+
+- [LLMs.md](LLMs.md) for the agent integration contract
+- [HUMANs.md](HUMANs.md) for human onboarding
+- [Docs/README.md](Docs/README.md) for deeper documentation
+
+## License
+
+Distributed under the MIT License. See [LICENSE](LICENSE).

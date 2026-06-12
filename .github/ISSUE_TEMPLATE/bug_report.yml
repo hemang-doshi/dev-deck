@@ -1,0 +1,88 @@
+name: Bug report
+description: Report a reproducible DevDeck bug
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a DevDeck bug. Please include bounded DevDeck output where possible instead of screenshots of long terminal sessions.
+
+  - type: input
+    id: version
+    attributes:
+      label: DevDeck version
+      placeholder: "npx devdeck --version"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15, Ubuntu 24.04, Windows 11"
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js and npm versions
+      placeholder: "node -v && npm -v"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install-method
+    attributes:
+      label: Install method
+      options:
+        - npm devDependency
+        - npm global
+        - from source
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command that failed
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: devdeck.yml
+      description: Redact secrets before sharing.
+      render: yaml
+
+  - type: textarea
+    id: snapshot
+    attributes:
+      label: DevDeck snapshot
+      description: Paste `npx devdeck snapshot` output if available. Redact secrets.
+      render: markdown
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Prefer `npx devdeck logs <service> --tail 80`.
+      render: text

@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a DevDeck improvement
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow is currently painful?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Primary audience
+      options:
+        - AI coding agents
+        - Human developers
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: textarea
+    id: agent-impact
+    attributes:
+      label: Agent-first impact
+      description: Would this reduce tokens, improve parsing, reduce tool calls, or improve debugging reliability?

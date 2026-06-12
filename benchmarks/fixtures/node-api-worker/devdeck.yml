@@ -1,0 +1,20 @@
+version: 2
+project: node-api-worker-benchmark
+services:
+  api:
+    command: npm run api
+    cwd: .
+    health:
+      type: http
+      url: http://127.0.0.1:3100/health
+      expectedStatus: 200
+      timeoutMs: 1000
+    readiness:
+      type: log
+      pattern: health endpoint ready
+  worker:
+    command: npm run worker
+    cwd: .
+    readiness:
+      type: log
+      pattern: worker booted

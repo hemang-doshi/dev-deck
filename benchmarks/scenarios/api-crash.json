@@ -1,0 +1,15 @@
+{
+  "id": "api-crash",
+  "description": "The API exits after startup with a deterministic runtime error.",
+  "measures": [
+    "failure diagnosis",
+    "targeted log retrieval",
+    "service recovery"
+  ],
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "database connection lost",
+    "recoveryAction": "restart api",
+    "finalState": "api running"
+  }
+}

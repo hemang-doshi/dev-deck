@@ -74,6 +74,52 @@ describe("agent commands", () => {
     expect(snapshot.stdout).not.toContain("boot complete");
   });
 
+  it("prints compact agent output for status, logs, and snapshot", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer();
+    servers.push(fixture);
+
+    await mkdir(path.join(workspaceDirectory, ".devdeck"), { recursive: true });
+    await writeFile(
+      path.join(workspaceDirectory, ".devdeck", "session.json"),
+      JSON.stringify({
+        version: 1,
+        project: "sample",
+        configPath: path.join(workspaceDirectory, "devdeck.yml"),
+        url: fixture.url,
+        port: fixture.port,
+        pid: 1234,
+        startedAt: "2026-05-23T00:00:00.000Z",
+      }),
+      "utf8",
+    );
+
+    const status = await runWithCapturedIo(["status", "--agent"], workspaceDirectory);
+    const logs = await runWithCapturedIo(
+      ["logs", "api", "--agent", "--tail", "40", "--severity", "error"],
+      workspaceDirectory,
+    );
+    const snapshot = await runWithCapturedIo(["snapshot", "--agent", "--tail", "10"], workspaceDirectory);
+
+    expect(status.code).toBe(0);
+    expect(status.stdout).toContain("STATE degraded");
+    expect(status.stdout).toContain("S worker exited ready=failed h=unknown r=2 issue=service_failed");
+    expect(status.stdout).not.toContain("/repo/worker");
+    expect(status.stdout).not.toContain("npm run worker");
+
+    expect(logs.code).toBe(0);
+    expect(logs.stdout).toContain("LOGS api matched=1");
+    expect(logs.stdout).toContain('E error api "db connection lost"');
+    expect(logs.stdout).not.toContain("2026-05-23");
+
+    expect(snapshot.code).toBe(0);
+    expect(snapshot.stdout).toContain("STATE degraded");
+    expect(snapshot.stdout).toContain('E error worker "job failed"');
+    expect(snapshot.stdout).toContain("NEXT devdeck service restart worker # failed service");
+    expect(snapshot.stdout).not.toContain("boot complete");
+  });
+
   it("supports json output and action commands", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
@@ -216,6 +262,27 @@ describe("agent commands", () => {
     });
     expect(result.stderr).toBe("");
     expect(result.stdout).not.toContain("stack");
+  });
+
+  it("rejects invalid agent flag combinations", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const status = await runWithCapturedIo(["status", "--json", "--agent"], workspaceDirectory);
+    const logs = await runWithCapturedIo(["logs", "--agent", "--stream", "--jsonl"], workspaceDirectory);
+
+    expect(status.code).toBe(2);
+    expect(JSON.parse(status.stdout)).toMatchObject({
+      command: "status",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        message: "Cannot combine --json and --agent.",
+      },
+    });
+    expect(status.stderr).toBe("");
+
+    expect(logs.code).toBe(2);
+    expect(logs.stderr).toContain("Cannot combine --agent with --stream or --jsonl.");
   });
 
   it("maps invalid logs json severity to stable cli usage responses", async () => {

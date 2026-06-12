@@ -1,0 +1,44 @@
+name: Config help
+description: Get help with devdeck.yml setup
+title: "config: "
+labels: ["config-help"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to run?
+      placeholder: "Frontend, API, worker, database, queue, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: structure
+    attributes:
+      label: Project structure
+      description: Paste a compact tree.
+      render: text
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Current devdeck.yml
+      render: yaml
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command that failed
+      render: bash
+
+  - type: input
+    id: error-code
+    attributes:
+      label: DD error code, if present
+      placeholder: "DD-ERR-0007"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Prefer bounded output from `npx devdeck logs --tail 80`.
+      render: text
