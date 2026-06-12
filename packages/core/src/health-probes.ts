@@ -12,7 +12,7 @@ export async function runHealthProbe(
   probe: HealthProbe,
 ): Promise<HealthProbeResult> {
   if (probe.type === "tcp") {
-    return (await checkTcp(probe.host ?? "127.0.0.1", probe.port, probe.timeoutMs))
+    return (await checkTcp(probe.host, probe.port, probe.timeoutMs))
       ? "healthy"
       : "unreachable";
   }
@@ -29,9 +29,27 @@ export async function runHealthProbe(
 }
 
 export function checkTcp(
-  host: string,
+  host: string | undefined,
   port: number,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<boolean> {
+  if (host) {
+    return checkTcpOnHost(host, port, timeoutMs);
+  }
+
+  return Promise.any([
+    checkTcpOnHost("127.0.0.1", port, timeoutMs),
+    checkTcpOnHost("::1", port, timeoutMs),
+  ]).then(
+    () => true,
+    () => false,
+  );
+}
+
+function checkTcpOnHost(
+  host: string,
+  port: number,
+  timeoutMs: number,
 ): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = net.connect({ host, port });

@@ -12,7 +12,7 @@ export async function waitForReadinessProbe(
 
   while (Date.now() <= deadline) {
     if (probe.type === "tcp") {
-      if (await checkTcp(probe.host ?? "127.0.0.1", probe.port, 300)) {
+      if (await checkTcp(probe.host, probe.port, 300)) {
         return true;
       }
     }
