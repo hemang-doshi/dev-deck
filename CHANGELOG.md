@@ -3,19 +3,34 @@
 All notable changes to DevDeck are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 
-## [1.3.0] — 2026-06-13
+## 1.3.0 - Agent CLI Release
 
 ### Added
 
-- Config v2 schema, normalization, and validation pipeline for `devdeck.config` files, including dependency-graph validation and compatibility coverage for v1-era inputs.
-- New CLI configuration workflows with `devdeck config validate` and `devdeck config explain`, plus richer config and `.env` inspection output.
-- Runtime orchestration upgrades for agent-first sessions, including session inspection helpers, structured agent response envelopes, and a canonical event store.
-- Expanded health and readiness probe support across the core runtime and server APIs.
+- Agent-first CLI workflow for local development stacks.
+- Background session startup with `devdeck start`.
+- Foreground development mode with `devdeck dev`.
+- Service state inspection with `devdeck status`.
+- Machine-readable state output through `devdeck status --json`.
+- Bounded log inspection with `devdeck logs`.
+- Compact stack snapshots with `devdeck snapshot`.
+- Service-level control with `devdeck service start`, `devdeck service stop`, and `devdeck service restart`.
+- Full stack shutdown with `devdeck stop`.
+- Agent onboarding through `LLMs.md`.
+- Human onboarding through `HUMANs.md`.
+- Structured `DD-ERR-XXXX` diagnostic error-code documentation.
+- Local dashboard for visual service monitoring.
 
-### Fixed
+### Changed
 
-- Hardened CLI runtime contract handling for agent responses and normalized service definitions.
-- Improved dashboard and backend health checks, including loopback probe behavior for IPv6 services and more reliable test storage setup.
+- Repositioned DevDeck as an agent-first local runtime control plane.
+- Updated documentation to use the published package name: `@hemangdoshi/devdeck`.
+
+### Notes
+
+This release establishes DevDeck as a usable working CLI for agent-first local development orchestration.
+
+Reproducible token-savings benchmarks are planned but not yet published.
 
 ## [1.1.0] — 2026-05-23
 

@@ -23,3 +23,11 @@ See how the CLI, core runner, HTTP server, WebSocket broker, and dashboard fit t
 
 ### [Troubleshooting Guide](troubleshooting.md)
 Solutions and workarounds for port conflicts, command failures, and local connectivity issues.
+
+### Concepts
+
+- [Why Agent-First?](concepts/why-agent-first.md)
+
+### Benchmarks
+
+- [Benchmark Methodology](benchmarks/methodology.md)

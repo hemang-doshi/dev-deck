@@ -1,0 +1,66 @@
+name: Benchmark result
+description: Share token/context savings data from a DevDeck run
+title: "benchmark: "
+labels: ["benchmark"]
+body:
+  - type: input
+    id: project-type
+    attributes:
+      label: Project type
+      placeholder: "Next.js + Express + worker, monorepo, Docker Compose stack"
+    validations:
+      required: true
+
+  - type: textarea
+    id: services
+    attributes:
+      label: Services managed
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: agent
+    attributes:
+      label: Agent used
+      placeholder: "Codex, Claude Code, Cursor, etc."
+
+  - type: input
+    id: model
+    attributes:
+      label: Model used
+      placeholder: "GPT-5.5, Claude, Gemini, etc."
+
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Baseline workflow
+      description: What commands/logs did the agent use without DevDeck?
+      render: text
+
+  - type: textarea
+    id: devdeck
+    attributes:
+      label: DevDeck workflow
+      description: What DevDeck commands were used?
+      render: text
+
+  - type: input
+    id: baseline-tokens
+    attributes:
+      label: Baseline token count
+
+  - type: input
+    id: devdeck-tokens
+    attributes:
+      label: DevDeck token count
+
+  - type: input
+    id: savings
+    attributes:
+      label: Token savings percentage
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes and caveats

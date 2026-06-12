@@ -20,6 +20,24 @@ Compare at least two workflows:
 - number of terminal interactions required
 - time-to-state-inspection for a representative failure
 
+## Token Accounting
+
+For each run, record:
+
+```txt
+total_agent_visible_tokens =
+  prompt_tokens
++ model_output_tokens
++ tool_observation_tokens
+```
+
+Then calculate:
+
+```txt
+token_savings_percent =
+  ((baseline_tokens - devdeck_tokens) / baseline_tokens) * 100
+```
+
 ## Rules
 
 - Use the same application stack in both conditions.
@@ -27,6 +45,21 @@ Compare at least two workflows:
 - Record exact commands used.
 - Preserve raw transcripts for auditability.
 - Report methodology separately from conclusions.
+
+## Required Disclosure
+
+Every published benchmark must include:
+
+- DevDeck version
+- operating system
+- Node.js version
+- project fixture
+- services managed
+- agent used
+- model used
+- raw command transcript
+- token counting method
+- benchmark date
 
 ## Status
 

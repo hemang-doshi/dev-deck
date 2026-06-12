@@ -1,0 +1,68 @@
+name: Agent integration issue
+description: Report an issue using DevDeck with a coding agent
+title: "agent: "
+labels: ["agent-integration"]
+body:
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent or tool
+      options:
+        - Codex
+        - Claude Code
+        - Cursor
+        - Kilo Code
+        - OpenCode
+        - Gemini CLI
+        - Hermes
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Model used, if known
+      placeholder: "GPT-5.5, Claude, Gemini, local model, etc."
+
+  - type: dropdown
+    id: failure-area
+    attributes:
+      label: What failed?
+      options:
+        - agent setup prompt
+        - devdeck.yml creation
+        - background start
+        - status parsing
+        - logs parsing
+        - snapshot parsing
+        - service restart
+        - stop / cleanup
+        - JSON output
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Agent prompt or instruction used
+      description: Paste the relevant instruction if safe to share.
+      render: markdown
+
+  - type: textarea
+    id: output
+    attributes:
+      label: DevDeck output
+      description: Redact secrets.
+      render: text
+
+  - type: textarea
+    id: expected-agent-behavior
+    attributes:
+      label: Expected agent behavior
+
+  - type: textarea
+    id: actual-agent-behavior
+    attributes:
+      label: Actual agent behavior
