@@ -136,9 +136,9 @@ The first published report is available here:
 
 The first published report is a historical approximate-only result. Current local harness runs use named real tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
-## Current Status: v1.3
+## Current Status: v1.4
 
-DevDeck v1.3 ships the core OSS foundation:
+DevDeck v1.4 ships the core OSS foundation:
 
 - local CLI orchestration for multi-service stacks
 - agent-friendly bounded inspection commands
