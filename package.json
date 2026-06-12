@@ -8,7 +8,8 @@
   "scripts": {
     "build": "npm run build --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
     "test": "npm run test --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
-    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard"
+    "lint": "npm run lint --workspace @devdeck/config --workspace @devdeck/core --workspace @devdeck/server --workspace @hemangdoshi/devdeck --workspace @devdeck/dashboard",
+    "benchmark:v0": "node benchmarks/scripts/run-v0.mjs"
   },
   "devDependencies": {
     "@adobe/css-tools": "4.4.4",
