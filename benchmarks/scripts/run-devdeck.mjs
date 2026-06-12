@@ -2,7 +2,6 @@ import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 
 import {
-  appendTranscript,
   cliDistPath,
   createRunDirectory,
   ensureEmptyDirectory,
@@ -11,8 +10,10 @@ import {
   getFixtureDirectory,
   parseRunDirArgument,
   quote,
+  recordCommandEvent,
   repoRoot,
   runCommand,
+  writeCommandEvents,
   writeJson,
 } from "./_shared.mjs";
 
@@ -28,16 +29,46 @@ async function ensureCliBuilt() {
 
 async function runDevDeckCommand(
   command,
-  { cwd, transcriptPath, outputPath, allowFailure = false, recordTranscript = true } = {},
+  {
+    cwd,
+    transcriptPath,
+    outputPath,
+    allowFailure = false,
+    recordTranscript = true,
+    events,
+    id,
+    commandLabel = command,
+    category,
+  } = {},
 ) {
-  const result = await runCommand(command, { cwd, allowFailure });
-  if (recordTranscript) {
-    await appendTranscript(transcriptPath, command, result.combined || "(no output)");
-  }
+  const startedAt = new Date().toISOString();
+  const result = await runCommand(command, { cwd, allowFailure: true });
+  const output = result.combined || "(no output)";
+
+  await recordCommandEvent({
+    events,
+    transcriptPath,
+    recordTranscript,
+    id,
+    mode: "devdeck",
+    scenario: "happy-path",
+    commandLabel,
+    command,
+    transcriptCommand: command,
+    category,
+    output,
+    startedAt,
+    endedAt: new Date().toISOString(),
+    exitCode: result.code,
+  });
 
   if (outputPath) {
     const content = result.stdout || result.stderr;
     await writeFile(outputPath, content, "utf8");
+  }
+
+  if (!allowFailure && result.code !== 0) {
+    throw new Error(`Command failed (${result.code}): ${command}\n${result.combined.trim()}`);
   }
 
   return result;
@@ -54,6 +85,7 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
   const snapshotPath = path.join(devdeckDir, "snapshot.md");
   const runJsonPath = path.join(devdeckDir, "run.json");
   const commands = [];
+  const commandEvents = [];
   const observations = [];
   const startedAt = new Date().toISOString();
   const devdeckBin = process.env.DEVDECK_BIN ?? defaultDevDeckBin();
@@ -69,11 +101,16 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       transcriptPath,
       allowFailure: true,
       recordTranscript: false,
+      events: commandEvents,
     });
 
     await runDevDeckCommand(baseCommand("start"), {
       cwd: fixtureDir,
       transcriptPath,
+      events: commandEvents,
+      id: "devdeck-start",
+      commandLabel: "devdeck start",
+      category: "startup",
     });
     commands.push("devdeck start");
     observations.push("DevDeck started in the background");
@@ -82,6 +119,10 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       cwd: fixtureDir,
       transcriptPath,
       outputPath: statusPath,
+      events: commandEvents,
+      id: "devdeck-status-json",
+      commandLabel: "devdeck status --json",
+      category: "state",
     });
     commands.push("devdeck status --json");
 
@@ -89,6 +130,10 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       cwd: fixtureDir,
       transcriptPath,
       outputPath: apiLogsPath,
+      events: commandEvents,
+      id: "devdeck-api-logs",
+      commandLabel: "devdeck logs api --tail 80",
+      category: "logs",
     });
     commands.push("devdeck logs api --tail 80");
 
@@ -96,6 +141,10 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       cwd: fixtureDir,
       transcriptPath,
       outputPath: workerLogsPath,
+      events: commandEvents,
+      id: "devdeck-worker-logs",
+      commandLabel: "devdeck logs worker --tail 80",
+      category: "logs",
     });
     commands.push("devdeck logs worker --tail 80");
 
@@ -103,12 +152,20 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       cwd: fixtureDir,
       transcriptPath,
       outputPath: snapshotPath,
+      events: commandEvents,
+      id: "devdeck-snapshot",
+      commandLabel: "devdeck snapshot",
+      category: "snapshot",
     });
     commands.push("devdeck snapshot");
 
     await runDevDeckCommand(baseCommand("service restart api"), {
       cwd: fixtureDir,
       transcriptPath,
+      events: commandEvents,
+      id: "devdeck-restart-api",
+      commandLabel: "devdeck service restart api",
+      category: "control",
     });
     commands.push("devdeck service restart api");
     observations.push("DevDeck restart request issued for api");
@@ -116,6 +173,10 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
     await runDevDeckCommand(baseCommand("stop"), {
       cwd: fixtureDir,
       transcriptPath,
+      events: commandEvents,
+      id: "devdeck-stop",
+      commandLabel: "devdeck stop",
+      category: "cleanup",
     });
     commands.push("devdeck stop");
 
@@ -141,6 +202,7 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       },
     };
 
+    await writeCommandEvents(devdeckDir, commandEvents);
     await writeJson(runJsonPath, runData);
     return { runDir: resolvedRunDir, devdeckDir, runJsonPath };
   } catch (error) {
@@ -158,6 +220,7 @@ export async function runDevDeck({ runDir, fixture = "node-api-worker" } = {}) {
       environment: getEnvironmentSummary(),
     };
 
+    await writeCommandEvents(devdeckDir, commandEvents);
     await writeJson(runJsonPath, runData);
     throw error;
   }

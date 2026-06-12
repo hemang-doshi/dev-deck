@@ -62,9 +62,103 @@ export function getEnvironmentSummary() {
   };
 }
 
-export async function appendTranscript(transcriptPath, command, output) {
+export function approximateTokens(characters) {
+  return Math.ceil(characters / 4);
+}
+
+export function formatTranscriptEntry(command, output) {
   const content = [`$ ${command}`, output.trimEnd(), ""].join("\n");
-  await appendFile(transcriptPath, `${content}\n`, "utf8");
+  return `${content}\n`;
+}
+
+export async function appendTranscript(transcriptPath, command, output) {
+  const content = formatTranscriptEntry(command, output);
+  await appendFile(transcriptPath, content, "utf8");
+  return content;
+}
+
+export function createCommandEvent({
+  id,
+  mode,
+  scenario,
+  commandLabel,
+  command,
+  transcriptCommand = commandLabel,
+  category,
+  output,
+  startedAt,
+  endedAt,
+  exitCode,
+}) {
+  const characters = formatTranscriptEntry(transcriptCommand, output).length;
+
+  return {
+    id,
+    mode,
+    scenario,
+    commandLabel,
+    command,
+    category,
+    characters,
+    approxTokens: approximateTokens(characters),
+    startedAt,
+    endedAt,
+    exitCode,
+  };
+}
+
+export async function recordCommandEvent({
+  events,
+  transcriptPath,
+  recordTranscript = true,
+  ...eventData
+}) {
+  const event = createCommandEvent(eventData);
+
+  if (recordTranscript) {
+    await appendTranscript(
+      transcriptPath,
+      eventData.transcriptCommand ?? event.commandLabel,
+      eventData.output,
+    );
+    events.push(event);
+  }
+
+  return event;
+}
+
+export async function writeCommandEvents(directory, events) {
+  const commandEventsPath = path.join(directory, "command-events.json");
+  await writeJson(commandEventsPath, events);
+  return commandEventsPath;
+}
+
+export async function writeCommandAttribution(runDir, modes = ["baseline", "devdeck"]) {
+  const attribution = {
+    tokenizer: "approx-char-div-4",
+    formula: "ceil(character_count / 4)",
+    modes: {},
+  };
+
+  for (const mode of modes) {
+    const eventsPath = path.join(runDir, mode, "command-events.json");
+    if (!(await fileExists(eventsPath))) {
+      continue;
+    }
+
+    const commands = await readJson(eventsPath);
+    const characters = commands.reduce((total, event) => total + event.characters, 0);
+
+    attribution.modes[mode] = {
+      characters,
+      approxTokens: approximateTokens(characters),
+      commands,
+    };
+  }
+
+  const attributionPath = path.join(runDir, "command-attribution.json");
+  await writeJson(attributionPath, attribution);
+  return attribution;
 }
 
 export async function runCommand(command, options = {}) {

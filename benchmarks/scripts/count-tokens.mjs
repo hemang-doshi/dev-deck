@@ -1,11 +1,12 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 
-import { parseRunDirArgument, writeJson } from "./_shared.mjs";
-
-function approximateTokens(characters) {
-  return Math.ceil(characters / 4);
-}
+import {
+  approximateTokens,
+  parseRunDirArgument,
+  writeCommandAttribution,
+  writeJson,
+} from "./_shared.mjs";
 
 export async function countTokens(runDir) {
   if (!runDir) {
@@ -43,6 +44,7 @@ export async function countTokens(runDir) {
   };
 
   await writeJson(path.join(runDir, "token-count.json"), result);
+  await writeCommandAttribution(runDir);
   return result;
 }
 

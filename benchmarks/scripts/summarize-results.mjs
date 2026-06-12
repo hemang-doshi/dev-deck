@@ -11,6 +11,12 @@ export async function summarizeResults(runDir) {
   const baseline = await readJson(path.join(runDir, "baseline/run.json"));
   const devdeck = await readJson(path.join(runDir, "devdeck/run.json"));
   const tokens = await readJson(path.join(runDir, "token-count.json"));
+  const attribution = await readJson(path.join(runDir, "command-attribution.json"));
+  const attributionRows = Object.entries(attribution.modes).flatMap(([mode, data]) =>
+    data.commands.map((event) =>
+      `| ${mode} | ${event.commandLabel} | ${event.category} | ${event.characters} | ${event.approxTokens} |`,
+    ),
+  );
 
   const summary = [
     "# DevDeck Benchmark Run",
@@ -48,10 +54,18 @@ export async function summarizeResults(runDir) {
     "",
     ...devdeck.commands.map((command, index) => `${index + 1}. ${command}`),
     "",
+    "## Command Attribution",
+    "",
+    "| Mode | Command | Category | Characters | Approx tokens |",
+    "|---|---|---|---:|---:|",
+    ...attributionRows,
+    "",
     "## Files",
     "",
     "- baseline transcript: `baseline/transcript.txt`",
     "- DevDeck transcript: `devdeck/transcript.txt`",
+    "- command events: `baseline/command-events.json`, `devdeck/command-events.json`",
+    "- command attribution: `command-attribution.json`",
     "- token count: `token-count.json`",
     "",
     "## Result",
