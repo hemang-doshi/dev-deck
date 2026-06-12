@@ -16,10 +16,15 @@ A tiny two-service Node.js stack:
 ```bash
 npm install
 npm run build
+npm run benchmark:validate
 npm run benchmark:v0
 ```
 
 The one-command runner writes a timestamped directory under `benchmarks/results/` and performs the baseline workflow, the DevDeck workflow, approximate token counting, and summary generation.
+
+## Published Reports
+
+- [v1.3.0 node-api-worker v0](reports/v1.3.0-node-api-worker-v0/summary.md)
 
 If you want to run each step manually:
 
@@ -47,3 +52,6 @@ Do not publish benchmark numbers without including:
 - raw transcripts
 - token counting method
 - date
+
+Committed proof artifacts belong under `benchmarks/reports/`.
+Generated local runs stay under `benchmarks/results/`.

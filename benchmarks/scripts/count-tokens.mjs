@@ -25,6 +25,11 @@ export async function countTokens(runDir) {
 
   const result = {
     tokenizer: "approx-char-div-4",
+    countedFiles: {
+      baseline: ["baseline/transcript.txt"],
+      devdeck: ["devdeck/transcript.txt"],
+    },
+    formula: "ceil(character_count / 4)",
     baseline: {
       characters: baselineCharacters,
       approxTokens: baselineTokens,
@@ -34,6 +39,7 @@ export async function countTokens(runDir) {
       approxTokens: devdeckTokens,
     },
     savingsPercent,
+    caveat: "Approximate token counting only. Not model-specific.",
   };
 
   await writeJson(path.join(runDir, "token-count.json"), result);

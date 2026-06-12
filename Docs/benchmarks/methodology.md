@@ -57,6 +57,14 @@ v0 uses approximate token counting based on character count divided by four.
 
 Future versions may add model-specific tokenizers.
 
+## First Published Fixture
+
+The first benchmark report is:
+
+`benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md`
+
+It uses the `node-api-worker` fixture and approximate token counting.
+
 ## Rules
 
 - Use the same application stack in both conditions.
@@ -82,6 +90,6 @@ Every published benchmark must include:
 
 ## Status
 
-Reproducible v1.3 benchmark results have not been published yet.
+The first published v1.3 benchmark result is fixture-specific and intentionally modest in scope.
 
-This file exists so future benchmark claims can point to a stable methodology first.
+This methodology remains the source of truth for how future benchmark claims should be produced.

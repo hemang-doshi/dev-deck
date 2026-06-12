@@ -1,3 +1,4 @@
+import net from "node:net";
 import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
 import { access, appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -12,6 +13,7 @@ export const repoRoot = path.resolve(__dirname, "../..");
 export const benchmarksRoot = path.join(repoRoot, "benchmarks");
 export const fixturesRoot = path.join(benchmarksRoot, "fixtures");
 export const resultsRoot = path.join(benchmarksRoot, "results");
+export const cliDistPath = path.join(repoRoot, "packages/cli/dist/index.js");
 
 export function timestampId() {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -30,6 +32,22 @@ export async function ensureEmptyDirectory(directory) {
 
 export function getFixtureDirectory(fixture = "node-api-worker") {
   return path.join(fixturesRoot, fixture);
+}
+
+export async function isPortFree(port, host = "127.0.0.1") {
+  return await new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once("error", () => {
+      resolve(false);
+    });
+
+    server.once("listening", () => {
+      server.close(() => resolve(true));
+    });
+
+    server.listen(port, host);
+  });
 }
 
 export function getNodeVersion() {

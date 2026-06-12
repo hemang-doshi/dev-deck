@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 
 import {
   appendTranscript,
+  cliDistPath,
   createRunDirectory,
   ensureEmptyDirectory,
   fileExists,
@@ -16,13 +17,11 @@ import {
 } from "./_shared.mjs";
 
 function defaultDevDeckBin() {
-  const cliPath = path.join(repoRoot, "packages/cli/dist/index.js");
-  return `node ${quote(cliPath)}`;
+  return `node ${quote(cliDistPath)}`;
 }
 
 async function ensureCliBuilt() {
-  const cliPath = path.join(repoRoot, "packages/cli/dist/index.js");
-  if (!(await fileExists(cliPath))) {
+  if (!(await fileExists(cliDistPath))) {
     await runCommand("npm run build --workspace @hemangdoshi/devdeck", { cwd: repoRoot });
   }
 }
