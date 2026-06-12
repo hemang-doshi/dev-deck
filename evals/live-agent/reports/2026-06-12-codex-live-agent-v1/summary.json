@@ -1,0 +1,203 @@
+{
+  "environment": {
+    "date": "2026-06-12T23:31:20.119Z",
+    "gitSha": "fcc33f71192cff7aedee2831a3bf68865d444163",
+    "agent": "codex",
+    "codexCli": "codex (codex-cli 0.125.0)",
+    "primaryTokenizer": "tiktoken-o200k_base",
+    "environment": {
+      "os": "darwin 25.5.0",
+      "node": "v26.0.0",
+      "date": "2026-06-12T23:31:20.119Z"
+    }
+  },
+  "skipped": null,
+  "results": [
+    {
+      "id": "api-crash",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "run": {
+            "scenario": "api-crash",
+            "variant": "baseline-shell",
+            "agent": "codex",
+            "model": "codex-cli 0.125.0",
+            "startedAt": "2026-06-12T23:31:21.237Z",
+            "endedAt": "2026-06-12T23:32:53.258Z",
+            "durationMs": 92021,
+            "transcript": "transcript.txt",
+            "tokens": {
+              "primaryTokenizer": "tiktoken-o200k_base",
+              "transcriptTokens": 2736,
+              "characters": 9608
+            },
+            "toolCalls": 11,
+            "turns": 1,
+            "exitCode": 0,
+            "finalAnswer": "failed service: `api`\n\nroot cause: injected runtime crash from `API_FAIL_AFTER_MS=5000`; after 5 seconds the API logs `ERROR database connection lost` and exits with code 1\n\nrecovery action taken: restarted the API with `API_FAIL_AFTER_MS=0 npm run api` to disable the injected failure at runtime; worker was already healthy\n\nfinal health result: API recovered and remained healthy past the crash window; `curl http://127.0.0.1:3100/health` returned `{\"ok\":true,\"service\":\"api\"}`",
+            "providerUsage": {
+              "inputTokens": 194691,
+              "outputTokens": 2347,
+              "totalTokens": 197439,
+              "reasoningOutputTokens": 401,
+              "cachedInputTokens": 170880
+            },
+            "providerUsageReason": null,
+            "error": null
+          },
+          "score": {
+            "scenario": "api-crash",
+            "variant": "baseline-shell",
+            "passed": true,
+            "checks": {
+              "failedServiceIdentified": true,
+              "rootCauseIdentified": true,
+              "recoveryActionTaken": true,
+              "finalHealthVerified": true
+            },
+            "passedChecks": 4,
+            "totalChecks": 4,
+            "notes": []
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "run": {
+            "scenario": "api-crash",
+            "variant": "devdeck-agent",
+            "agent": "codex",
+            "model": "codex-cli 0.125.0",
+            "startedAt": "2026-06-12T23:32:53.462Z",
+            "endedAt": "2026-06-12T23:35:53.472Z",
+            "durationMs": 180010,
+            "transcript": "transcript.txt",
+            "tokens": {
+              "primaryTokenizer": "tiktoken-o200k_base",
+              "transcriptTokens": 8030,
+              "characters": 28262
+            },
+            "toolCalls": 24,
+            "turns": 0,
+            "exitCode": 0,
+            "finalAnswer": "DevDeck shows the stack stable after recovery, and the remaining worker item is only a warning log, not a failed service. I’m checking the API’s exposed health endpoint once to capture the expected `ok:true` confirmation alongside the DevDeck state.",
+            "providerUsage": null,
+            "providerUsageReason": "Codex CLI did not expose provider token usage.",
+            "error": null
+          },
+          "score": {
+            "scenario": "api-crash",
+            "variant": "devdeck-agent",
+            "passed": false,
+            "checks": {
+              "failedServiceIdentified": false,
+              "rootCauseIdentified": true,
+              "recoveryActionTaken": true,
+              "finalHealthVerified": true
+            },
+            "passedChecks": 3,
+            "totalChecks": 4,
+            "notes": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "noisy-worker",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "run": {
+            "scenario": "noisy-worker",
+            "variant": "baseline-shell",
+            "agent": "codex",
+            "model": "codex-cli 0.125.0",
+            "startedAt": "2026-06-12T23:35:53.649Z",
+            "endedAt": "2026-06-12T23:38:43.607Z",
+            "durationMs": 169958,
+            "transcript": "transcript.txt",
+            "tokens": {
+              "primaryTokenizer": "tiktoken-o200k_base",
+              "transcriptTokens": 5857,
+              "characters": 21321
+            },
+            "toolCalls": 34,
+            "turns": 1,
+            "exitCode": 0,
+            "finalAnswer": "failed service: none\n\nroot cause: none. Warning signal observed from `worker`: `warning: queue latency above threshold` every 5 heartbeats, caused by the intentional runtime config `NOISY_WORKER=1` with `WORKER_WARN_EVERY=5`, not a service failure.\n\nrecovery action taken: none needed. Services were started successfully (`api` and `worker`), health was inspected, and both were shut down cleanly after verification.\n\nfinal health result: api health check returned `{\"ok\":true,\"service\":\"api\"}` and worker continued heartbeats while emitting the expected periodic warning.",
+            "providerUsage": {
+              "inputTokens": 416959,
+              "outputTokens": 5376,
+              "totalTokens": 423129,
+              "reasoningOutputTokens": 794,
+              "cachedInputTokens": 394112
+            },
+            "providerUsageReason": null,
+            "error": null
+          },
+          "score": {
+            "scenario": "noisy-worker",
+            "variant": "baseline-shell",
+            "passed": false,
+            "checks": {
+              "warningIdentified": true,
+              "noFalseFailedServiceClaim": true,
+              "finalHealthVerified": true,
+              "boundedLogUsage": false
+            },
+            "passedChecks": 3,
+            "totalChecks": 4,
+            "notes": [
+              "Tool calls exceeded scenario limit (34/20)."
+            ]
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "run": {
+            "scenario": "noisy-worker",
+            "variant": "devdeck-agent",
+            "agent": "codex",
+            "model": "codex-cli 0.125.0",
+            "startedAt": "2026-06-12T23:38:43.772Z",
+            "endedAt": "2026-06-12T23:41:25.604Z",
+            "durationMs": 161832,
+            "transcript": "transcript.txt",
+            "tokens": {
+              "primaryTokenizer": "tiktoken-o200k_base",
+              "transcriptTokens": 10115,
+              "characters": 34430
+            },
+            "toolCalls": 19,
+            "turns": 1,
+            "exitCode": 0,
+            "finalAnswer": "failed service: `api` was transiently failing on the first startup attempt; `worker` warning signal was periodic `warning: queue latency above threshold`\n\nroot cause: DevDeck background startup failed because port `4545` was already in use; that supervisor failure tore the stack down. The worker warning was expected noisy-fixture behavior, not a service failure.\n\nrecovery action taken: ran `devdeck stop`, then restarted with `devdeck start --port 4555`\n\nfinal health result: `ok:true` via `devdeck session inspect --json`; stack running with `api` healthy and `worker` running, with only the expected periodic warning signal",
+            "providerUsage": {
+              "inputTokens": 433127,
+              "outputTokens": 3296,
+              "totalTokens": 437471,
+              "reasoningOutputTokens": 1048,
+              "cachedInputTokens": 387968
+            },
+            "providerUsageReason": null,
+            "error": null
+          },
+          "score": {
+            "scenario": "noisy-worker",
+            "variant": "devdeck-agent",
+            "passed": true,
+            "checks": {
+              "warningIdentified": true,
+              "noFalseFailedServiceClaim": true,
+              "finalHealthVerified": true,
+              "boundedLogUsage": true
+            },
+            "passedChecks": 4,
+            "totalChecks": 4,
+            "notes": []
+          }
+        }
+      ]
+    }
+  ]
+}

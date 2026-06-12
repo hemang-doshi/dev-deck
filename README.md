@@ -136,6 +136,8 @@ The first published report is available here:
 
 The first published report is a historical approximate-only result. Current local harness runs use named real tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
+DevDeck also includes an optional live-agent evaluation harness under `evals/live-agent/`. That harness compares the same scenario under raw shell and DevDeck-guided debugging, records transcript-token approximations, and records provider usage only when the runtime exposes it.
+
 ## Current Status: v1.4
 
 DevDeck v1.4 ships the core OSS foundation:
@@ -161,6 +163,7 @@ Start with [CONTRIBUTING.md](CONTRIBUTING.md), then read:
 - [LLMs.md](LLMs.md) for the agent integration contract
 - [HUMANs.md](HUMANs.md) for human onboarding
 - [Docs/README.md](Docs/README.md) for deeper documentation
+- [evals/README.md](evals/README.md) for optional live evaluation workflows
 
 ## License
 

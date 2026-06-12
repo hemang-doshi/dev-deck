@@ -1,0 +1,21 @@
+{
+  "id": "api-crash",
+  "description": "API starts successfully, then exits with a deterministic runtime error.",
+  "fixture": "node-api-worker",
+  "goal": "Identify the failed service, identify the root cause, recover the service, and verify final health.",
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "database connection lost",
+    "recoveryActionContains": "restart api",
+    "finalHealthContains": "\"ok\":true"
+  },
+  "environment": {
+    "API_FAIL_AFTER_MS": "5000",
+    "API_FAIL_MESSAGE": "database connection lost"
+  },
+  "limits": {
+    "maxTurns": 8,
+    "maxToolCalls": 20,
+    "timeoutMs": 180000
+  }
+}
