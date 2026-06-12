@@ -25,11 +25,16 @@ Strong comparative evidence requires:
 - the same token-counting method
 - raw transcripts for every mode
 - per-command output attribution
+- scripted expected-outcome evaluation
 
-The current harness uses approximate token counting:
+The current harness uses `tiktoken-o200k_base` as the primary local tokenizer and reports `tiktoken-cl100k_base` plus the historical approximation:
 
 ```txt
 approx_tokens = ceil(character_count / 4)
 ```
 
+Approximate counts are smoke-test and fallback data, not the primary metric for new local reports. Provider-reported usage remains the gold standard for future live-agent measurements.
+
 Results remain fixture-specific even when those controls are held constant.
+
+See [Benchmark Token Counting](token-counting.md) and [Benchmark Evaluation Design](evaluation-design.md) for the measurement and scoring contracts.

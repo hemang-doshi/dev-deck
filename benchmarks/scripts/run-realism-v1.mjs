@@ -41,8 +41,6 @@ export async function runRealismMatrix({ runDir } = {}) {
   const results = {
     version: 1,
     fixture: "node-api-worker",
-    tokenizer: "approx-char-div-4",
-    formula: "ceil(character_count / 4)",
     startedAt: new Date().toISOString(),
     scenarios: {},
   };
@@ -55,9 +53,14 @@ export async function runRealismMatrix({ runDir } = {}) {
 
     const tokenCount = await readJson(path.join(scenarioRunDir, "token-count.json"));
     const attribution = await readJson(path.join(scenarioRunDir, "command-attribution.json"));
+    const evaluations = await readJson(path.join(scenarioRunDir, "evaluation-summary.json"));
+    results.primaryTokenizer ??= tokenCount.primaryTokenizer;
+    results.tokenizers ??= Object.keys(tokenCount.tokenizers);
     results.scenarios[scenario] = {
       modes: tokenCount.modes,
       comparisons: tokenCount.comparisons,
+      tokenizers: tokenCount.tokenizers,
+      evaluations: evaluations.modes,
       commandAttribution: attribution.modes,
       files: {
         summary: path.relative(resolvedRunDir, path.join(scenarioRunDir, "summary.md")),
@@ -65,6 +68,10 @@ export async function runRealismMatrix({ runDir } = {}) {
         commandAttribution: path.relative(
           resolvedRunDir,
           path.join(scenarioRunDir, "command-attribution.json"),
+        ),
+        evaluationSummary: path.relative(
+          resolvedRunDir,
+          path.join(scenarioRunDir, "evaluation-summary.json"),
         ),
       },
     };
@@ -77,7 +84,8 @@ export async function runRealismMatrix({ runDir } = {}) {
     Object.entries(scenarioResult.modes).map(([mode, values]) => {
       const comparison = scenarioResult.comparisons[`${mode}-vs-baseline`];
       const savings = comparison ? `${comparison.savingsPercent}%` : "-";
-      return `| ${scenario} | ${mode} | ${values.characters} | ${values.approxTokens} | ${savings} |`;
+      const evaluation = scenarioResult.evaluations[mode];
+      return `| ${scenario} | ${mode} | ${values.primaryTokens} | ${savings} | ${evaluation?.score.passed ? "yes" : "no"} |`;
     }),
   );
   const summary = [
@@ -85,7 +93,9 @@ export async function runRealismMatrix({ runDir } = {}) {
     "",
     "This matrix compares agent-visible transcript size across the same fixture under healthy, noisy, and failing runtime conditions.",
     "",
-    "| Scenario | Mode | Characters | Approx tokens | Savings vs baseline |",
+    `Primary tokenizer: \`${results.primaryTokenizer}\``,
+    "",
+    "| Scenario | Mode | Primary tokens | Savings vs baseline | Evaluation passed |",
     "|---|---|---:|---:|---:|",
     ...rows,
     "",
@@ -95,7 +105,8 @@ export async function runRealismMatrix({ runDir } = {}) {
     "- Noisy-worker results measure repeated log observation and filtering cost.",
     "- API-crash results measure runtime diagnosis and recovery cost.",
     "- Negative savings identify transcript overhead; they are not product-wide conclusions.",
-    "- All numbers are fixture-specific and use `ceil(character_count / 4)`.",
+    `- All numbers are fixture-specific and use \`${results.primaryTokenizer}\` as the primary tokenizer.`,
+    "- Provider-reported usage may differ for live agent runs.",
     "",
   ].join("\n");
   await writeFile(path.join(resolvedRunDir, "matrix-summary.md"), summary, "utf8");

@@ -26,7 +26,7 @@ node benchmarks/scripts/run-scenario.mjs api-crash --mode devdeck-full
 
 `benchmark:realism` runs scenario-based comparisons that are closer to DevDeck's actual product claim: reducing context growth during noisy or failing local development sessions.
 
-Each scenario run writes raw transcripts, per-command events, command attribution, approximate token counts, and a scenario-aware summary under `benchmarks/results/`. The realism runner adds `matrix-results.json` and `matrix-summary.md`.
+Each scenario run writes raw transcripts, per-command tokenizer attribution, local real and approximate token counts, per-mode evaluation results, and a scenario-aware summary under `benchmarks/results/`. The realism runner adds `matrix-results.json` and `matrix-summary.md`.
 
 ## Published Reports
 
@@ -41,13 +41,15 @@ node benchmarks/scripts/count-tokens.mjs benchmarks/results/<run-id>
 node benchmarks/scripts/summarize-results.mjs benchmarks/results/<run-id>
 ```
 
-## Token Counting
+## Measurement
 
-v0 uses approximate token counting:
+New local runs use `tiktoken-o200k_base` as the primary tokenizer. They also report `tiktoken-cl100k_base` and the approximate formula:
 
 ```txt
 approx_tokens = ceil(character_count / 4)
 ```
+
+The first published v0 report remains an approximate-only historical artifact. New reports must state their primary tokenizer. See [Token Counting](../Docs/benchmarks/token-counting.md) and [Evaluation Design](../Docs/benchmarks/evaluation-design.md).
 
 ## Rules
 

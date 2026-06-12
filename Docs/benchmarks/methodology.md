@@ -53,11 +53,12 @@ The harness compares:
 1. unmanaged raw process orchestration
 2. DevDeck-managed orchestration using bounded commands
 
-v0 uses approximate token counting based on character count divided by four.
+The historical v0 report uses approximate token counting based on character count divided by four.
 
-Future versions may add model-specific tokenizers.
+New local runs use real tokenizer counts as the primary metric and retain the approximation as an explicit fallback. See [Benchmark Token Counting](token-counting.md).
 
 Scenario-specific guidance, including how to interpret negative results, is documented in [Interpreting Benchmark Results](interpreting-results.md).
+Expected outcomes and scripted scoring are documented in [Benchmark Evaluation Design](evaluation-design.md).
 
 ## First Published Fixture
 
@@ -75,6 +76,7 @@ It uses the `node-api-worker` fixture and approximate token counting.
 - Preserve raw transcripts for auditability.
 - Report methodology separately from conclusions.
 - Preserve per-command output attribution so transcript overhead can be traced to specific commands.
+- Record scenario evaluation results separately from transcript-size measurements.
 
 ## Required Disclosure
 
