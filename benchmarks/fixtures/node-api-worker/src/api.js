@@ -1,6 +1,8 @@
 import http from "node:http";
 
 const port = Number(process.env.PORT ?? "3100");
+const failAfterMs = Number(process.env.API_FAIL_AFTER_MS ?? "0");
+const failMessage = process.env.API_FAIL_MESSAGE ?? "database connection lost";
 
 if (process.env.REQUIRED_API_SECRET === "missing-test") {
   console.error("api startup failed: REQUIRED_API_SECRET is set to missing-test");
@@ -39,3 +41,11 @@ process.on("SIGINT", () => {
 });
 
 server.listen(port, "127.0.0.1");
+
+if (failAfterMs > 0) {
+  setTimeout(() => {
+    console.error(`ERROR ${failMessage}`);
+    console.error("api exiting with code 1");
+    server.close(() => process.exit(1));
+  }, failAfterMs);
+}

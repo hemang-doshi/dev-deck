@@ -31,4 +31,4 @@ Docs/superpowers/
 # Local DevDeck session and configuration
 .devdeck/
 devdeck.yml
-
+!benchmarks/fixtures/node-api-worker/devdeck.yml

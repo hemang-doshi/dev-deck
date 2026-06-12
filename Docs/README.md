@@ -31,3 +31,4 @@ Solutions and workarounds for port conflicts, command failures, and local connec
 ### Benchmarks
 
 - [Benchmark Methodology](benchmarks/methodology.md)
+- [Interpreting Benchmark Results](benchmarks/interpreting-results.md)
