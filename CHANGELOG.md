@@ -3,6 +3,20 @@
 All notable changes to DevDeck are documented here.
 Versioning follows [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] — 2026-06-13
+
+### Added
+
+- Config v2 schema, normalization, and validation pipeline for `devdeck.config` files, including dependency-graph validation and compatibility coverage for v1-era inputs.
+- New CLI configuration workflows with `devdeck config validate` and `devdeck config explain`, plus richer config and `.env` inspection output.
+- Runtime orchestration upgrades for agent-first sessions, including session inspection helpers, structured agent response envelopes, and a canonical event store.
+- Expanded health and readiness probe support across the core runtime and server APIs.
+
+### Fixed
+
+- Hardened CLI runtime contract handling for agent responses and normalized service definitions.
+- Improved dashboard and backend health checks, including loopback probe behavior for IPv6 services and more reliable test storage setup.
+
 ## [1.1.0] — 2026-05-23
 
 ### Changed

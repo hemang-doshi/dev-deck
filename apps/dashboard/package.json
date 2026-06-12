@@ -1,6 +1,6 @@
 {
   "name": "@devdeck/dashboard",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
-    "@devdeck/core": "1.2.0",
+    "@devdeck/core": "1.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
