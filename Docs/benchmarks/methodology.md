@@ -38,6 +38,25 @@ token_savings_percent =
   ((baseline_tokens - devdeck_tokens) / baseline_tokens) * 100
 ```
 
+## Current Harness
+
+The initial benchmark harness lives in:
+
+`benchmarks/`
+
+The v0 fixture is:
+
+`benchmarks/fixtures/node-api-worker`
+
+The harness compares:
+
+1. unmanaged raw process orchestration
+2. DevDeck-managed orchestration using bounded commands
+
+v0 uses approximate token counting based on character count divided by four.
+
+Future versions may add model-specific tokenizers.
+
 ## Rules
 
 - Use the same application stack in both conditions.

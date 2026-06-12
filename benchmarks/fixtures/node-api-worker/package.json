@@ -1,0 +1,11 @@
+{
+  "name": "devdeck-benchmark-node-api-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "api": "node src/api.js",
+    "worker": "node src/worker.js",
+    "occupy-port": "node scripts/occupy-port.js"
+  },
+  "dependencies": {}
+}
