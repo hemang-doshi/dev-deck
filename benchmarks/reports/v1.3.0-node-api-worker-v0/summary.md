@@ -64,6 +64,7 @@ It does not claim universal token savings across all projects.
 
 ## Caveats
 
+- Historical report: this run predates real-tokenizer benchmark metrics.
 - Approximate token counting only. Not model-specific.
 - This result uses approximate token counting via `ceil(character_count / 4)`.
 - It is a fixture-specific result, not a universal claim.

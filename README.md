@@ -132,7 +132,7 @@ The first published report is available here:
 
 `benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md`
 
-Current benchmark results are fixture-specific and use approximate token counting. We do not claim universal savings yet.
+The first published report is a historical approximate-only result. Current local harness runs use named real tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
 ## Current Status: v1.3
 

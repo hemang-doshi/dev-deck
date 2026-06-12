@@ -11,3 +11,4 @@ Contents:
 
 This result uses approximate token counting via `ceil(character_count / 4)`.
 It is a fixture-specific result, not a universal claim.
+It is preserved as the historical first approximate report; future reports use real local tokenizer counts as their primary metric.

@@ -6,6 +6,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import {
+  countTextWithTokenizers,
+  getTokenizerConfiguration,
+} from "./tokenizers.mjs";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -77,7 +82,7 @@ export async function appendTranscript(transcriptPath, command, output) {
   return content;
 }
 
-export function createCommandEvent({
+export async function createCommandEvent({
   id,
   mode,
   scenario,
@@ -90,7 +95,9 @@ export function createCommandEvent({
   endedAt,
   exitCode,
 }) {
-  const characters = formatTranscriptEntry(transcriptCommand, output).length;
+  const transcriptEntry = formatTranscriptEntry(transcriptCommand, output);
+  const { primaryTokenizer, tokenizers } = getTokenizerConfiguration();
+  const count = await countTextWithTokenizers(transcriptEntry, { tokenizers });
 
   return {
     id,
@@ -99,8 +106,11 @@ export function createCommandEvent({
     commandLabel,
     command,
     category,
-    characters,
-    approxTokens: approximateTokens(characters),
+    characters: count.characters,
+    tokens: count.tokens,
+    primaryTokens: count.tokens[primaryTokenizer],
+    primaryTokenizer,
+    approxTokens: count.tokens["approx-char-div-4"] ?? null,
     startedAt,
     endedAt,
     exitCode,
@@ -113,7 +123,7 @@ export async function recordCommandEvent({
   recordTranscript = true,
   ...eventData
 }) {
-  const event = createCommandEvent(eventData);
+  const event = await createCommandEvent(eventData);
 
   if (recordTranscript) {
     await appendTranscript(
@@ -167,11 +177,19 @@ export async function listRunModes(runDir) {
   });
 }
 
-export async function writeCommandAttribution(runDir, requestedModes) {
+function splitTranscriptEntries(transcript) {
+  const starts = [...transcript.matchAll(/^\$ /gm)].map((match) => match.index);
+  return starts.map((start, index) =>
+    transcript.slice(start, starts[index + 1] ?? transcript.length),
+  );
+}
+
+export async function writeCommandAttribution(runDir, requestedModes, options = {}) {
   const modes = requestedModes ?? await listRunModes(runDir);
+  const { primaryTokenizer, tokenizers } = getTokenizerConfiguration(options);
   const attribution = {
-    tokenizer: "approx-char-div-4",
-    formula: "ceil(character_count / 4)",
+    primaryTokenizer,
+    tokenizers,
     modes: {},
   };
 
@@ -182,12 +200,49 @@ export async function writeCommandAttribution(runDir, requestedModes) {
     }
 
     const commands = await readJson(eventsPath);
-    const characters = commands.reduce((total, event) => total + event.characters, 0);
+    const transcript = await readFile(path.join(runDir, mode, "transcript.txt"), "utf8");
+    const transcriptEntries = splitTranscriptEntries(transcript);
+    const enrichedCommands = [];
+
+    for (const [index, command] of commands.entries()) {
+      const count = command.tokens && tokenizers.every((tokenizer) =>
+        Number.isInteger(command.tokens[tokenizer])
+      )
+        ? {
+            characters: command.characters,
+            tokens: command.tokens,
+          }
+        : await countTextWithTokenizers(transcriptEntries[index] ?? "", { tokenizers });
+      enrichedCommands.push({
+        ...command,
+        characters: count.characters,
+        tokens: count.tokens,
+        primaryTokens: count.tokens[primaryTokenizer],
+        primaryTokenizer,
+        approxTokens: count.tokens["approx-char-div-4"] ?? null,
+      });
+    }
+
+    const characters = enrichedCommands.reduce(
+      (total, event) => total + event.characters,
+      0,
+    );
+    const tokenTotals = Object.fromEntries(
+      tokenizers.map((tokenizer) => [
+        tokenizer,
+        enrichedCommands.reduce(
+          (total, event) => total + event.tokens[tokenizer],
+          0,
+        ),
+      ]),
+    );
 
     attribution.modes[mode] = {
       characters,
-      approxTokens: approximateTokens(characters),
-      commands,
+      tokens: tokenTotals,
+      primaryTokens: tokenTotals[primaryTokenizer],
+      approxTokens: tokenTotals["approx-char-div-4"] ?? null,
+      commands: enrichedCommands,
     };
   }
 

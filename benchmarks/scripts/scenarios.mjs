@@ -1,17 +1,22 @@
-export const scenarioDefinitions = {
-  "happy-path": {
-    description: "Happy-path startup and routine service inspection.",
-    measures: "Orchestration and observation overhead when all services remain healthy.",
-  },
-  "noisy-worker": {
-    description: "A healthy stack with frequent deterministic worker logs.",
-    measures: "Context growth and targeted inspection cost under noisy long-running logs.",
-  },
-  "api-crash": {
-    description: "The API exits after startup with a deterministic runtime error.",
-    measures: "Runtime failure diagnosis after a service crashes post-startup.",
-  },
-};
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const scenariosDirectory = path.resolve(__dirname, "../scenarios");
+
+function loadScenarioDefinition(name) {
+  return JSON.parse(
+    readFileSync(path.join(scenariosDirectory, `${name}.json`), "utf8"),
+  );
+}
+
+export const scenarioDefinitions = Object.fromEntries(
+  ["happy-path", "noisy-worker", "api-crash"].map((name) => [
+    name,
+    loadScenarioDefinition(name),
+  ]),
+);
 
 export const supportedModes = [
   "baseline",

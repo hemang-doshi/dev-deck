@@ -21,6 +21,7 @@ import {
   writeJson,
 } from "./_shared.mjs";
 import { countTokens } from "./count-tokens.mjs";
+import { evaluateScenario } from "./evaluate-scenario.mjs";
 import { assertSupportedMode, getScenarioDefinition } from "./scenarios.mjs";
 import { summarizeResults } from "./summarize-results.mjs";
 
@@ -472,6 +473,7 @@ export async function runScenario({ scenario, mode, runDir } = {}) {
       fixture,
       description: definition.description,
       measures: definition.measures,
+      expected: definition.expected,
       createdAt: startedAt,
     });
   }
@@ -537,6 +539,7 @@ export async function runScenario({ scenario, mode, runDir } = {}) {
   });
 
   await countTokens(resolvedRunDir);
+  await evaluateScenario(resolvedRunDir, mode);
   await summarizeResults(resolvedRunDir);
 
   if (failure) {

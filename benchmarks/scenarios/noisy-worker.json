@@ -1,0 +1,15 @@
+{
+  "id": "noisy-worker",
+  "description": "A healthy stack with frequent deterministic worker logs.",
+  "measures": [
+    "context growth",
+    "targeted log filtering",
+    "warning discovery"
+  ],
+  "expected": {
+    "warningContains": "queue latency above threshold",
+    "failedService": null,
+    "recoveryAction": null,
+    "finalState": "services running"
+  }
+}

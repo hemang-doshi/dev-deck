@@ -3,6 +3,40 @@ import { writeFile } from "node:fs/promises";
 
 import { fileExists, listRunModes, parseRunDirArgument, readJson } from "./_shared.mjs";
 
+function tokenValues(tokens, mode) {
+  const primary = tokens.tokenizers[tokens.primaryTokenizer].modes[mode];
+  const approximate = tokens.tokenizers["approx-char-div-4"]?.modes[mode];
+  return {
+    characters: primary.characters,
+    primaryTokens: primary.tokens,
+    approxTokens: approximate?.tokens ?? null,
+  };
+}
+
+function displayCount(value) {
+  return value ?? "-";
+}
+
+function attributionRows(attribution, modes) {
+  return modes.flatMap((mode) =>
+    (attribution.modes[mode]?.commands ?? []).map(
+      (event) =>
+        `| ${mode} | ${event.commandLabel} | ${event.category} | ${event.primaryTokens} | ${displayCount(event.tokens["approx-char-div-4"])} |`,
+    ),
+  );
+}
+
+function evaluationRows(evaluationSummary, modes) {
+  return modes.map((mode) => {
+    const evaluation = evaluationSummary?.modes[mode];
+    if (!evaluation) return `| ${mode} | no | 0/0 | evaluation missing |`;
+    const failedChecks = Object.entries(evaluation.checks)
+      .filter(([, passed]) => !passed)
+      .map(([name]) => name);
+    return `| ${mode} | ${evaluation.score.passed ? "yes" : "no"} | ${evaluation.score.passedChecks}/${evaluation.score.totalChecks} | ${failedChecks.length === 0 ? "all checks passed" : `failed: ${failedChecks.join(", ")}`} |`;
+  });
+}
+
 export async function summarizeResults(runDir) {
   if (!runDir) {
     throw new Error("Usage: node benchmarks/scripts/summarize-results.mjs <results-dir>");
@@ -17,11 +51,9 @@ export async function summarizeResults(runDir) {
   const devdeck = await readJson(path.join(runDir, "devdeck/run.json"));
   const tokens = await readJson(path.join(runDir, "token-count.json"));
   const attribution = await readJson(path.join(runDir, "command-attribution.json"));
-  const attributionRows = Object.entries(attribution.modes).flatMap(([mode, data]) =>
-    data.commands.map((event) =>
-      `| ${mode} | ${event.commandLabel} | ${event.category} | ${event.characters} | ${event.approxTokens} |`,
-    ),
-  );
+  const modes = ["baseline", "devdeck"];
+  const baselineTokens = tokenValues(tokens, "baseline");
+  const devdeckTokens = tokenValues(tokens, "devdeck");
 
   const summary = [
     "# DevDeck Benchmark Run",
@@ -37,17 +69,14 @@ export async function summarizeResults(runDir) {
     `- DevDeck: ${devdeck.environment.devdeckVersion ?? "unknown"}`,
     `- Date: ${devdeck.environment.date}`,
     "",
-    "## Baseline",
+    "## Token Results",
     "",
-    `- Commands: ${baseline.commands.length}`,
-    `- Transcript characters: ${tokens.baseline.characters}`,
-    `- Approx tokens: ${tokens.baseline.approxTokens}`,
+    `Primary tokenizer: \`${tokens.primaryTokenizer}\``,
     "",
-    "## DevDeck",
-    "",
-    `- Commands: ${devdeck.commands.length}`,
-    `- Transcript characters: ${tokens.devdeck.characters}`,
-    `- Approx tokens: ${tokens.devdeck.approxTokens}`,
+    "| Mode | Commands | Characters | Primary tokens | Approx tokens |",
+    "|---|---:|---:|---:|---:|",
+    `| baseline | ${baseline.commands.length} | ${baselineTokens.characters} | ${baselineTokens.primaryTokens} | ${displayCount(baselineTokens.approxTokens)} |`,
+    `| devdeck | ${devdeck.commands.length} | ${devdeckTokens.characters} | ${devdeckTokens.primaryTokens} | ${displayCount(devdeckTokens.approxTokens)} |`,
     "",
     "## Command Sequences",
     "",
@@ -61,9 +90,9 @@ export async function summarizeResults(runDir) {
     "",
     "## Command Attribution",
     "",
-    "| Mode | Command | Category | Characters | Approx tokens |",
+    "| Mode | Command | Category | Primary tokens | Approx tokens |",
     "|---|---|---|---:|---:|",
-    ...attributionRows,
+    ...attributionRows(attribution, modes),
     "",
     "## Files",
     "",
@@ -75,7 +104,7 @@ export async function summarizeResults(runDir) {
     "",
     "## Result",
     "",
-    `Approx token savings: ${tokens.savingsPercent}%`,
+    `Primary-token savings: ${tokens.savingsPercent}%`,
     "",
     "## Interpretation",
     "",
@@ -84,7 +113,10 @@ export async function summarizeResults(runDir) {
     "",
     "## Caveats",
     "",
-    `- This uses approximate token counting via \`${tokens.formula}\`.`,
+    `- Primary tokenizer: \`${tokens.primaryTokenizer}\`.`,
+    ...(tokens.primaryTokenizer === "approx-char-div-4"
+      ? ["- Approximate fallback mode is active."]
+      : []),
     `- ${tokens.caveat}`,
     "- This result is fixture-specific and not a universal claim.",
     "",
@@ -99,15 +131,14 @@ async function summarizeScenarioResults(runDir) {
   const scenario = await readJson(path.join(runDir, "scenario.json"));
   const tokens = await readJson(path.join(runDir, "token-count.json"));
   const attribution = await readJson(path.join(runDir, "command-attribution.json"));
+  const evaluationSummaryPath = path.join(runDir, "evaluation-summary.json");
+  const evaluationSummary = await fileExists(evaluationSummaryPath)
+    ? await readJson(evaluationSummaryPath)
+    : undefined;
   const modes = await listRunModes(runDir);
   const runs = Object.fromEntries(
     await Promise.all(
       modes.map(async (mode) => [mode, await readJson(path.join(runDir, mode, "run.json"))]),
-    ),
-  );
-  const attributionRows = modes.flatMap((mode) =>
-    (attribution.modes[mode]?.commands ?? []).map(
-      (event) => `| ${mode} | ${event.commandLabel} | ${event.category} | ${event.approxTokens} |`,
     ),
   );
 
@@ -120,7 +151,9 @@ async function summarizeScenarioResults(runDir) {
     "",
     "## What this scenario measures",
     "",
-    scenario.measures,
+    ...(Array.isArray(scenario.measures)
+      ? scenario.measures.map((measure) => `- ${measure}`)
+      : [scenario.measures]),
     "",
     "## Modes Compared",
     "",
@@ -128,18 +161,28 @@ async function summarizeScenarioResults(runDir) {
     "",
     "## Token Results",
     "",
-    "| Mode | Commands | Characters | Approx tokens |",
-    "|---|---:|---:|---:|",
+    `Primary tokenizer: \`${tokens.primaryTokenizer}\``,
+    "",
+    "| Mode | Commands | Characters | Primary tokens | Approx tokens |",
+    "|---|---:|---:|---:|---:|",
     ...modes.map(
-      (mode) =>
-        `| ${mode} | ${runs[mode].commands.length} | ${tokens.modes[mode].characters} | ${tokens.modes[mode].approxTokens} |`,
+      (mode) => {
+        const values = tokenValues(tokens, mode);
+        return `| ${mode} | ${runs[mode].commands.length} | ${values.characters} | ${values.primaryTokens} | ${displayCount(values.approxTokens)} |`;
+      },
     ),
+    "",
+    "## Evaluation Results",
+    "",
+    "| Mode | Passed | Checks passed | Notes |",
+    "|---|---:|---:|---|",
+    ...evaluationRows(evaluationSummary, modes),
     "",
     "## Command Attribution",
     "",
-    "| Mode | Command | Category | Approx tokens |",
-    "|---|---|---|---:|",
-    ...attributionRows,
+    "| Mode | Command | Category | Primary tokens | Approx tokens |",
+    "|---|---|---|---:|---:|",
+    ...attributionRows(attribution, modes),
     "",
     "## Interpretation",
     "",
@@ -150,7 +193,10 @@ async function summarizeScenarioResults(runDir) {
     "",
     "## Caveats",
     "",
-    `- This uses approximate token counting via \`${tokens.formula}\`.`,
+    `- Primary tokenizer: \`${tokens.primaryTokenizer}\`.`,
+    ...(tokens.primaryTokenizer === "approx-char-div-4"
+      ? ["- Approximate fallback mode is active."]
+      : []),
     `- ${tokens.caveat}`,
     "- Compare modes only when the fixture, scenario, waits, and counting method are unchanged.",
     "",

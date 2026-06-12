@@ -31,4 +31,6 @@ Solutions and workarounds for port conflicts, command failures, and local connec
 ### Benchmarks
 
 - [Benchmark Methodology](benchmarks/methodology.md)
+- [Benchmark Token Counting](benchmarks/token-counting.md)
+- [Benchmark Evaluation Design](benchmarks/evaluation-design.md)
 - [Interpreting Benchmark Results](benchmarks/interpreting-results.md)
