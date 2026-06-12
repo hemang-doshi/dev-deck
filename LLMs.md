@@ -1,73 +1,69 @@
-# LLMs.md - Agent Onboarding & System Prompt
+# LLMs.md - Agent Integration Guide
 
-Copy and paste the prompt below into your LLM agent (e.g. Gemini, Claude, GPT) to let it automatically set up, configure, and manage DevDeck as a dependency in this repository.
+This file defines how coding agents should behave when operating in a repository that uses DevDeck.
 
----
+## Install
 
-### Agent System Prompt (Copy & Paste)
+If DevDeck is not already present in `package.json`, install the published CLI package:
 
-```markdown
-You are an autonomous AI coding agent assisting with development on this repository.
-Your task is to set up, configure, and run DevDeck to coordinate the development workspace and services.
-
-Follow these instructions to run the local stack:
-
-1. **Check if DevDeck is installed**:
-   - Run `npx devdeck --version` or check if `devdeck` is listed in `package.json`. If not installed, you can install it locally as a devDependency:
-     `npm install -D devdeck`
-
-2. **Configure devdeck.yml**:
-   - Check if there is an existing `devdeck.yml` file in the root of the project.
-   - If not, create it by running `npx devdeck init`.
-   - Inspect the codebase to identify the backend, frontend, worker, or database processes that must start together.
-   - Map each service under the `services` key. Example format:
-     ```yaml
-     project: my-awesome-app
-     services:
-       api:
-         command: npm run dev
-         cwd: ./apps/api
-         port: 3000
-       web:
-         command: npm run dev
-         cwd: ./apps/web
-         port: 8080
-     ```
-
-3. **Control Session (Background/Non-blocking)**:
-   - Always start DevDeck in the background (detached mode) so your command line terminal does not block:
-     `npx devdeck start`
-   - If you want to run it in the foreground for active debugging, run:
-     `npx devdeck dev`
-   - To stop the entire development deck, run:
-     `npx devdeck stop`
-
-4. **Monitor Health & Logs**:
-   - Get a quick markdown-formatted status report:
-     `npx devdeck status`
-   - Retrieve logs for a specific service (defaulting to the last 80 lines):
-     `npx devdeck logs <service-name>`
-   - Query logs with filters, e.g. for warning/error severities or specific grep terms:
-     `npx devdeck logs api --severity error --grep "Database"`
-   - Create a bounded markdown snapshot of the entire workspace state (services state + log history tail):
-     `npx devdeck snapshot`
-
-5. **Interact with Specific Services**:
-   - Restart a service after you make changes or fix a bug:
-     `npx devdeck service restart <service-name>`
-   - Manually start/stop individual services:
-     `npx devdeck service start <service-name>`
-     `npx devdeck service stop <service-name>`
-
-6. **Error Handling**:
-   - DevDeck provides structured error codes of the form `[DD-ERR-XXXX]` with matching troubleshooting hints in stderr.
-   - If a command throws an error, parse the `DD-ERR-XXXX` code and follow the printed `Hint` to automatically fix it without needing user intervention (e.g. port conflict DD-ERR-0010, missing config DD-ERR-0001, invalid cwd DD-ERR-0007).
+```bash
+npm install -D @hemangdoshi/devdeck
 ```
 
----
+The package exposes the `devdeck` binary, so run commands with `npx devdeck`.
 
-## Why DevDeck? (Token & Context Optimization for Agents)
+## Agent Contract
 
-When coding agents manage complex projects, starting each microservice/database individually consumes massive context space due to scrolling terminals, multiple open ports, process tracking overhead, and complex environment management.
+When working in a repository using DevDeck:
 
-By using DevDeck, the agent can control the entire stack with a single non-blocking command (`devdeck start`), and fetch clean, token-efficient state snapshots (`devdeck snapshot` / `devdeck status`) that fit directly into prompt limits.
+1. Prefer `npx devdeck start` over long-running raw service commands.
+2. Prefer `npx devdeck status --json` for machine-readable state.
+3. Prefer `npx devdeck logs <service> --tail 80` over dumping full terminal buffers.
+4. Prefer `npx devdeck snapshot` before asking the user for manual debugging context.
+5. Parse `[DD-ERR-XXXX]` codes and follow the printed hint before escalating.
+6. Stop the deck with `npx devdeck stop` when the task is complete.
+
+## Recommended Agent Workflow
+
+```markdown
+You are an autonomous AI coding agent assisting with development in this repository.
+
+Use DevDeck as the runtime control plane whenever it is configured.
+
+Workflow:
+1. Check whether `devdeck.yml` exists.
+2. If DevDeck is not installed, run `npm install -D @hemangdoshi/devdeck`.
+3. If configuration is missing, run `npx devdeck init` and fill in services based on the repository layout.
+4. Start the stack with `npx devdeck start`.
+5. Use `npx devdeck status --json` to inspect state.
+6. Use `npx devdeck logs <service> --tail 80` for bounded debugging context.
+7. Use `npx devdeck snapshot` before requesting more diagnostics from the user.
+8. Restart only the affected service with `npx devdeck service restart <name>` when possible.
+9. Stop the stack with `npx devdeck stop` when the task is complete.
+
+If a command fails, parse the `[DD-ERR-XXXX]` code and follow the printed hint before escalating.
+```
+
+## Core Commands
+
+- `npx devdeck init`
+- `npx devdeck start`
+- `npx devdeck dev`
+- `npx devdeck status --json`
+- `npx devdeck logs <service> --tail 80`
+- `npx devdeck snapshot`
+- `npx devdeck service restart <name>`
+- `npx devdeck stop`
+
+## Avoid
+
+- Do not leave raw `npm run dev` processes running in random terminals when DevDeck is configured.
+- Do not paste huge terminal logs into context before trying `devdeck logs`.
+- Do not restart the full stack if `devdeck service restart <name>` is enough.
+- Do not ask the user for logs until `devdeck snapshot` has been attempted.
+
+## Why This Matters
+
+DevDeck is not just a CLI dependency. It is a behavior-shaping contract for agents.
+
+The goal is to replace terminal sprawl with bounded, predictable commands that minimize token waste and improve debugging discipline.
