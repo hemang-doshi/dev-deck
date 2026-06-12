@@ -33,17 +33,18 @@ export function checkTcp(
   port: number,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<boolean> {
-  if (host) {
+  if (host && !isLoopbackHost(host)) {
     return checkTcpOnHost(host, port, timeoutMs);
   }
 
-  return Promise.any([
+  return Promise.all([
     checkTcpOnHost("127.0.0.1", port, timeoutMs),
     checkTcpOnHost("::1", port, timeoutMs),
-  ]).then(
-    () => true,
-    () => false,
-  );
+  ]).then((results) => results.some(Boolean));
+}
+
+function isLoopbackHost(host: string): boolean {
+  return host === "127.0.0.1" || host === "::1" || host === "localhost";
 }
 
 function checkTcpOnHost(

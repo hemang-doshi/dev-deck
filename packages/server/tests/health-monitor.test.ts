@@ -61,6 +61,7 @@ describe("startHealthMonitor", () => {
           port: address.port,
           healthProbe: {
             type: "tcp",
+            host: "127.0.0.1",
             port: address.port,
           },
         },
