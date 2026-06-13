@@ -1,16 +1,17 @@
 {
-  "id": "port-conflict",
-  "description": "A helper process occupies the API port before startup.",
+  "id": "startup-success",
+  "description": "Everything starts cleanly with realistic startup ordering and steady background activity.",
   "measures": [
     "startup",
-    "port conflict detection"
+    "health verification",
+    "shutdown cleanup"
   ],
-  "failureMode": "port 4000 occupied before API start",
+  "failureMode": "none",
   "expected": {
-    "failedService": "api",
-    "rootCauseContains": "EADDRINUSE",
-    "recoveryAction": "release port 4000 and restart api",
-    "finalState": "api startup blocked"
+    "failedService": null,
+    "rootCauseContains": null,
+    "recoveryAction": "none",
+    "finalState": "all services healthy"
   },
   "runtime": {
     "env": {
@@ -36,9 +37,6 @@
     },
     "externalApi": {
       "mode": "healthy"
-    },
-    "portConflict": {
-      "port": 4000
     }
   }
 }
