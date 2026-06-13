@@ -31,6 +31,8 @@ For actual live agent task-completion evaluation, use `evals/live-agent/`. The b
 
 Each scenario run writes raw transcripts, per-command tokenizer attribution, local real and approximate token counts, per-mode evaluation results, and a scenario-aware summary under `benchmarks/results/`. The realism runner adds `matrix-results.json` and `matrix-summary.md`.
 
+The newer complex-stack product-validation harness is documented in [product-validation.md](product-validation.md). It runs the `complex-saas-stack` fixture in `manual-runtime` and `devdeck-current` modes without replacing the older `node-api-worker` flows.
+
 ## Published Reports
 
 - [v1.3.0 node-api-worker v0](reports/v1.3.0-node-api-worker-v0/summary.md)
