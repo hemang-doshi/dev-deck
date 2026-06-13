@@ -72,8 +72,10 @@ function collectActual(runData, events) {
     eventCountsByCategory: categories,
     cleanupExitCode: findEvent(events, "manual-runtime-cleanup")?.exitCode
       ?? findEvent(events, "devdeck-current-cleanup")?.exitCode
+      ?? findEvent(events, "devdeck-optimized-cleanup")?.exitCode
       ?? findEvent(events, "manual-runtime-cleanup-after-error")?.exitCode
       ?? findEvent(events, "devdeck-current-cleanup-after-error")?.exitCode
+      ?? findEvent(events, "devdeck-optimized-cleanup-after-error")?.exitCode
       ?? null,
   };
 }
@@ -107,6 +109,8 @@ export async function evaluateProductValidationRun(modeDir) {
     event.category === "cleanup" && event.exitCode === 0
   );
   const cleanupEvents = events.filter((event) => event.category === "cleanup");
+  const diagnoseEvent = events.find((event) => event.category === "diagnosis");
+  const recoveryEvent = events.find((event) => event.category === "recovery");
 
   switch (runData.scenario) {
     case "startup-success": {
@@ -227,6 +231,8 @@ export async function evaluateProductValidationRun(modeDir) {
           runData,
           failureEvidenceEvent?.endedAt ?? degradedStateEvent?.endedAt ?? null,
         ),
+        time_to_diagnosis_ms: elapsedMs(runData, diagnoseEvent?.endedAt ?? null),
+        time_to_recovery_ms: elapsedMs(runData, recoveryEvent?.endedAt ?? null),
         time_to_cleanup_ms: cleanupEvents.length > 0
           ? new Date(cleanupEvents.at(-1).endedAt).getTime()
               - new Date(cleanupEvents[0].startedAt).getTime()

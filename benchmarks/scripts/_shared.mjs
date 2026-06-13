@@ -83,6 +83,9 @@ export async function appendTranscript(transcriptPath, command, output) {
 }
 
 export async function createCommandEvent({
+  ...extra
+}) {
+  const {
   id,
   mode,
   scenario,
@@ -94,7 +97,7 @@ export async function createCommandEvent({
   startedAt,
   endedAt,
   exitCode,
-}) {
+  } = extra;
   const transcriptEntry = formatTranscriptEntry(transcriptCommand, output);
   const { primaryTokenizer, tokenizers } = getTokenizerConfiguration();
   const count = await countTextWithTokenizers(transcriptEntry, { tokenizers });
@@ -115,6 +118,21 @@ export async function createCommandEvent({
     startedAt,
     endedAt,
     exitCode,
+    ...Object.fromEntries(
+      Object.entries(extra).filter(([key]) => ![
+        "id",
+        "mode",
+        "scenario",
+        "commandLabel",
+        "command",
+        "transcriptCommand",
+        "category",
+        "output",
+        "startedAt",
+        "endedAt",
+        "exitCode",
+      ].includes(key)),
+    ),
   };
 }
 
@@ -132,8 +150,9 @@ export async function recordCommandEvent({
       eventData.transcriptCommand ?? event.commandLabel,
       eventData.output,
     );
-    events.push(event);
   }
+
+  events.push(event);
 
   return event;
 }

@@ -60,8 +60,11 @@ export class ProductValidationRecorder {
     allowFailure = false,
     saveOutputPath = null,
     recordTranscript = true,
+    hidden = false,
+    hiddenReason = null,
+    startedAtOverride = null,
   }) {
-    const startedAt = new Date().toISOString();
+    const startedAt = startedAtOverride ?? new Date().toISOString();
     const result = await runCommand(command, { cwd, allowFailure: true });
     const output = result.combined || "(no output)";
 
@@ -80,6 +83,8 @@ export class ProductValidationRecorder {
       startedAt,
       endedAt: new Date().toISOString(),
       exitCode: result.code,
+      hidden,
+      hiddenReason,
     });
 
     if (saveOutputPath) {
@@ -152,14 +157,21 @@ export class ProductValidationRecorder {
 
   async captureDevDeckServiceLog(serviceName, command, lines = 120) {
     const outputPath = this.getServiceLogPath(serviceName);
-    const result = await runCommand(command, {
-      cwd: this.fixtureDir,
+    const startedAt = new Date().toISOString();
+    const result = await this.runObservedCommand({
+      id: `${this.mode}-${serviceName}-devdeck-log-${this.events.length + 1}`,
+      command,
+      commandLabel: command.replace(/^node .*?dist\/index\.js/, "npx devdeck"),
+      transcriptCommand: command.replace(/^node .*?dist\/index\.js/, "npx devdeck"),
+      category: "hidden-evaluator",
       allowFailure: true,
+      saveOutputPath: outputPath,
+      recordTranscript: false,
+      hidden: true,
+      hiddenReason: "evaluator log artifact",
+      startedAtOverride: startedAt,
     });
-    const output = result.combined || "(no output)";
-    const content = output.trimEnd() || "(no output)";
-    await writeFile(outputPath, `${content}\n`, "utf8");
-    return { output, exitCode: result.code, lines };
+    return { output: result.combined || "(no output)", exitCode: result.code, lines };
   }
 
   async disposeServiceHandles() {
@@ -174,17 +186,26 @@ export class ProductValidationRecorder {
   }
 
   buildMetrics() {
-    const transcriptCharacters = this.events.reduce(
+    const visibleEvents = this.events.filter((event) => event.hidden !== true);
+    const transcriptCharacters = visibleEvents.reduce(
       (total, event) => total + (event.characters ?? 0),
       0,
     );
-    const transcriptTokens = this.events.reduce(
+    const transcriptTokens = visibleEvents.reduce(
       (total, event) => total + (event.primaryTokens ?? event.approxTokens ?? 0),
       0,
     );
-    const totalToolCalls = this.events.length;
-    const runtimeManagementToolCalls = this.events.filter((event) =>
+    const totalToolCalls = visibleEvents.length;
+    const runtimeManagementToolCalls = visibleEvents.filter((event) =>
       runtimeManagementCategories.has(event.category)
+    ).length;
+    const hiddenEvaluatorCommands = this.events.filter((event) => event.hidden === true).length;
+    const devdeckCommands = visibleEvents.filter((event) => /\bdevdeck\b|packages\/cli\/dist\/index\.js/.test(event.commandLabel ?? event.command ?? "")).length;
+    const logInspectionCommands = visibleEvents.filter((event) => /\blogs\b|tail -n/.test(event.commandLabel ?? event.command ?? "")).length;
+    const diagnoseCommands = visibleEvents.filter((event) => /\bdiagnose\b/.test(event.commandLabel ?? event.command ?? "")).length;
+    const restartCommands = visibleEvents.filter((event) => /\brestart\b/.test(event.commandLabel ?? event.command ?? "")).length;
+    const rawShellFallbackCommands = visibleEvents.filter((event) =>
+      !/\bdevdeck\b|packages\/cli\/dist\/index\.js/.test(event.commandLabel ?? event.command ?? "")
     ).length;
 
     return {
@@ -192,6 +213,12 @@ export class ProductValidationRecorder {
       transcriptTokens,
       totalToolCalls,
       runtimeManagementToolCalls,
+      rawShellFallbackCommands,
+      devdeckCommands,
+      logInspectionCommands,
+      diagnoseCommands,
+      restartCommands,
+      hiddenEvaluatorCommands,
     };
   }
 
