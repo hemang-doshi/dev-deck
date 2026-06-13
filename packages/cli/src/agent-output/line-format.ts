@@ -1,5 +1,6 @@
 import type { SessionSnapshot } from "@devdeck/core";
 import type { AgentLogsResponse } from "../agent-client.js";
+import { formatAgentDiagnosis as formatDiagnosis } from "./diagnosis.js";
 import {
   defaultAgentLogsPolicy,
   defaultAgentSnapshotPolicy,
@@ -31,6 +32,10 @@ export function formatAgentSnapshot(
 export function formatAgentLogs(result: AgentLogsResponse): string {
   const signal = withNextActions(buildAgentLogsSignal(result));
   return formatLogSignal(signal, defaultAgentLogsPolicy);
+}
+
+export function formatAgentDiagnosis(snapshot: SessionSnapshot): string {
+  return formatDiagnosis(snapshot);
 }
 
 function withNextActions(signal: AgentSignal): AgentSignal {

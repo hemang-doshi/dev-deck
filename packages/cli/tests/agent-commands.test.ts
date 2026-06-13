@@ -116,7 +116,7 @@ describe("agent commands", () => {
     expect(snapshot.code).toBe(0);
     expect(snapshot.stdout).toContain("STATE degraded");
     expect(snapshot.stdout).toContain('E error worker "job failed"');
-    expect(snapshot.stdout).toContain("NEXT devdeck service restart worker # failed service");
+    expect(snapshot.stdout).toContain("NEXT devdeck service restart worker --agent --wait 30 # targeted recovery");
     expect(snapshot.stdout).not.toContain("boot complete");
   });
 
@@ -152,6 +152,135 @@ describe("agent commands", () => {
     expect(restart.code).toBe(0);
     expect(restart.stdout).toContain("restart");
     expect(fixture.actions).toContainEqual({ action: "restart", serviceName: "api" });
+  });
+
+  it("supports diagnose --agent with deterministic output", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer({
+      snapshotFactory: () => ({
+        ...createSnapshot(),
+        services: [
+          {
+            ...createSnapshot().services[0],
+            health: "unknown",
+            readiness: "failed",
+            status: "error",
+            pid: null,
+            lastError: "startup config error: missing required env SESSION_SECRET",
+          },
+        ],
+        logs: [
+          {
+            ...createSnapshot().logs[1],
+            service: "api",
+            severity: "error",
+            line: "startup config error: missing required env SESSION_SECRET",
+          },
+        ],
+      }),
+    });
+    servers.push(fixture);
+
+    const diagnose = await runWithCapturedIo(["diagnose", "--agent", "--url", fixture.url], workspaceDirectory);
+
+    expect(diagnose.code).toBe(4);
+    expect(diagnose.stdout).toContain("DIAG degraded root=missing_env svc=api conf=0.95");
+    expect(diagnose.stdout).toContain("CAUSE api missing required environment variable SESSION_SECRET");
+    expect(diagnose.stdout).toContain("NEXT devdeck stop --agent # cleanup failed startup");
+  });
+
+  it("waits for service restart in agent mode and returns compact recovery output", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    let restarted = false;
+    const failingSnapshot = createSnapshot();
+    const healthySnapshot = {
+      ...createSnapshot(),
+      services: [
+        {
+          ...createSnapshot().services[0],
+          restartCount: 1,
+        },
+        {
+          ...createSnapshot().services[1],
+          status: "running",
+          readiness: "ready",
+          health: "healthy",
+          pid: 222,
+          restartCount: 1,
+          lastExitCode: null,
+          lastError: null,
+        },
+      ],
+      logs: [],
+    };
+    const fixture = await createFixtureServer({
+      snapshotFactory: () => (restarted ? healthySnapshot : failingSnapshot),
+      onAction: (action) => {
+        if (action.action === "restart" && action.serviceName === "api") {
+          restarted = true;
+        }
+      },
+    });
+    servers.push(fixture);
+
+    const restart = await runWithCapturedIo(
+      ["service", "restart", "api", "--agent", "--wait", "1", "--url", fixture.url],
+      workspaceDirectory,
+    );
+
+    expect(restart.code).toBe(0);
+    expect(restart.stdout).toContain("SERVICE restart ok svc=api ready=ready h=healthy");
+    expect(restart.stdout).toContain("NEXT devdeck status --agent # verify stack state");
+  });
+
+  it("supports start --agent with default wait and start --agent --wait 0", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    await writeFile(path.join(workspaceDirectory, "devdeck.yml"), "project: sample\nservices: {}\n", "utf8");
+    const fixture = await createFixtureServer({
+      snapshotFactory: () => ({
+        ...createSnapshot(),
+        services: [
+          {
+            ...createSnapshot().services[0],
+          },
+        ],
+        logs: [],
+      }),
+    });
+    servers.push(fixture);
+
+    spawnMock.mockImplementationOnce(() => {
+      setTimeout(() => {
+        void writeSessionFile(workspaceDirectory, {
+          pid: process.pid,
+          url: fixture.url,
+        });
+      }, 10);
+      return { unref: vi.fn() };
+    });
+
+    const waited = await runWithCapturedIo(["start", "--agent", "--wait"], workspaceDirectory);
+    expect(waited.code).toBe(0);
+    expect(waited.stdout).toContain("START ok project=sample");
+    expect(waited.stdout).toContain("STATE running svc=1 fail=0 bad=0 warn=0 err=0");
+
+    await rm(path.join(workspaceDirectory, ".devdeck"), { recursive: true, force: true });
+    spawnMock.mockImplementationOnce(() => {
+      setTimeout(() => {
+        void writeSessionFile(workspaceDirectory, {
+          pid: process.pid,
+          url: fixture.url,
+        });
+      }, 10);
+      return { unref: vi.fn() };
+    });
+
+    const noWait = await runWithCapturedIo(["start", "--agent", "--wait", "0"], workspaceDirectory);
+    expect(noWait.code).toBe(0);
+    expect(noWait.stdout).toContain("START ok project=sample");
   });
 
   it("prints clean JSONL events from the active session", async () => {
@@ -327,6 +456,32 @@ describe("agent commands", () => {
     });
     expect(result.stderr).toBe("");
     expect(result.stdout).not.toContain("stack");
+  });
+
+  it("rejects invalid wait values for start and service commands", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const start = await runWithCapturedIo(["start", "--json", "--wait", "-1"], workspaceDirectory);
+    const service = await runWithCapturedIo(["service", "restart", "api", "--json", "--wait", "10x"], workspaceDirectory);
+
+    expect(start.code).toBe(2);
+    expect(JSON.parse(start.stdout)).toMatchObject({
+      command: "start",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        message: "Invalid --wait value. Expected an integer from 0 to 300 seconds.",
+      },
+    });
+
+    expect(service.code).toBe(2);
+    expect(JSON.parse(service.stdout)).toMatchObject({
+      command: "service",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        message: "Invalid --wait value. Expected an integer from 0 to 300 seconds.",
+      },
+    });
   });
 
   it("maps unknown json commands to stable cli usage responses", async () => {
@@ -631,7 +786,10 @@ async function writeSessionFile(
   );
 }
 
-async function createFixtureServer(): Promise<{
+async function createFixtureServer(options: {
+  snapshotFactory?: () => ReturnType<typeof createSnapshot>;
+  onAction?: (action: { action: string; serviceName?: string }) => void;
+} = {}): Promise<{
   url: string;
   port: number;
   actions: Array<{ action: string; serviceName?: string }>;
@@ -647,7 +805,7 @@ async function createFixtureServer(): Promise<{
     }
 
     if (request.method === "GET" && url.pathname === "/api/snapshot") {
-      respondJson(response, 200, createSnapshot());
+      respondJson(response, 200, (options.snapshotFactory ?? createSnapshot)());
       return;
     }
 
@@ -662,7 +820,7 @@ async function createFixtureServer(): Promise<{
         },
         totalMatched: 1,
         returned: 1,
-        logs: [createSnapshot().logs[1]],
+        logs: [(options.snapshotFactory ?? createSnapshot)().logs[1]],
       });
       return;
     }
@@ -707,6 +865,7 @@ async function createFixtureServer(): Promise<{
       const body = await readRequestBody(request);
       const action = JSON.parse(body) as { action: string; serviceName?: string };
       actions.push(action);
+      options.onAction?.(action);
       respondJson(response, 200, { ok: true });
       return;
     }

@@ -1,6 +1,7 @@
 import type { SessionSnapshot } from "@devdeck/core";
 import type { AgentLogsResponse } from "./agent-client.js";
 import {
+  formatAgentDiagnosis as formatCompactAgentDiagnosis,
   formatAgentLogs as formatCompactAgentLogs,
   formatAgentSnapshot as formatCompactAgentSnapshot,
   formatAgentStatus as formatCompactAgentStatus,
@@ -60,3 +61,4 @@ export function formatSnapshot(snapshot: SessionSnapshot, tail: number): string 
 export const formatAgentStatus = formatCompactAgentStatus;
 export const formatAgentSnapshot = formatCompactAgentSnapshot;
 export const formatAgentLogs = formatCompactAgentLogs;
+export const formatAgentDiagnosis = formatCompactAgentDiagnosis;

@@ -20,6 +20,7 @@ export const productValidationResultsRoot = path.join(resultsRoot, "product-vali
 export const supportedModes = [
   "manual-runtime",
   "devdeck-current",
+  "devdeck-optimized",
 ];
 
 export const supportedScenarios = [
@@ -47,6 +48,8 @@ export const runtimeManagementCategories = new Set([
   "startup",
   "state",
   "health-check",
+  "diagnosis",
+  "recovery",
   "logs",
   "process-management",
   "cleanup",

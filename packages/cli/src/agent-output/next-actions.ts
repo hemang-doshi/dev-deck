@@ -1,37 +1,40 @@
 import type { AgentNextAction, AgentSignal } from "./signal.js";
+import { detectRootCauseFromText } from "./diagnosis.js";
 
 export function suggestNextActions(signal: AgentSignal): AgentNextAction[] {
   const actions: AgentNextAction[] = [];
 
   for (const issue of signal.issues) {
-    if (issue.kind === "service_failed" && issue.service) {
+    const inferredRoot = detectRootCauseFromText(issue.message);
+
+    if (
+      issue.kind === "health_unreachable" ||
+      issue.kind === "blocked" ||
+      issue.kind === "error_logs" ||
+      inferredRoot === "missing_env" ||
+      inferredRoot === "port_conflict" ||
+      inferredRoot === "readiness_timeout" ||
+      inferredRoot === "health_unreachable"
+    ) {
       actions.push({
-        command: `devdeck service restart ${issue.service}`,
-        reason: "failed service",
+        command: "devdeck diagnose --agent",
+        reason: "identify root cause and recovery action",
       });
       continue;
     }
 
-    if (issue.kind === "health_unreachable" && issue.service) {
+    if (issue.kind === "service_failed" && issue.service) {
       actions.push({
-        command: `devdeck logs ${issue.service} --agent --severity error --tail 40`,
-        reason: "inspect failing service",
+        command: `devdeck service restart ${issue.service} --agent --wait 30`,
+        reason: "targeted recovery",
       });
       continue;
     }
 
     if (issue.kind === "warning_logs" && issue.service) {
       actions.push({
-        command: `devdeck logs ${issue.service} --agent --grep warning --tail 30`,
-        reason: "inspect warning context",
-      });
-      continue;
-    }
-
-    if (issue.kind === "error_logs" && issue.service) {
-      actions.push({
-        command: `devdeck logs ${issue.service} --agent --severity error --tail 40`,
-        reason: "inspect error context",
+        command: `devdeck logs ${issue.service} --agent --severity warning --tail 40`,
+        reason: "inspect bounded warning evidence",
       });
       continue;
     }

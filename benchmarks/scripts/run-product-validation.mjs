@@ -2,6 +2,7 @@ import path from "node:path";
 
 import { writeJson } from "./_shared.mjs";
 import { runDevDeckCurrentMode } from "./product-validation/devdeck-current-mode.mjs";
+import { runDevDeckOptimizedMode } from "./product-validation/devdeck-optimized-mode.mjs";
 import { evaluateProductValidationRun } from "./product-validation/evaluate-product-validation.mjs";
 import {
   assertSupportedMode,
@@ -14,6 +15,7 @@ import { runManualRuntimeMode } from "./product-validation/manual-runtime-mode.m
 const runners = {
   "manual-runtime": runManualRuntimeMode,
   "devdeck-current": runDevDeckCurrentMode,
+  "devdeck-optimized": runDevDeckOptimizedMode,
 };
 
 export async function runProductValidation({ scenario, mode, runRoot }) {
@@ -46,7 +48,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   if (!scenario || !mode) {
     process.stderr.write(
-      "Usage: node benchmarks/scripts/run-product-validation.mjs <scenario> --mode <manual-runtime|devdeck-current> [--run-root <path>]\n",
+      "Usage: node benchmarks/scripts/run-product-validation.mjs <scenario> --mode <manual-runtime|devdeck-current|devdeck-optimized> [--run-root <path>]\n",
     );
     process.exit(1);
   }

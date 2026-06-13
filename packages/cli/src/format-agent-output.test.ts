@@ -121,7 +121,7 @@ describe("format agent output", () => {
     expect(output).toContain("S worker exited ready=failed h=unreachable r=2 issue=service_failed");
     expect(output).toContain('I error worker service_failed "job failed"');
     expect(output).toContain('E error worker "ERROR job failed"');
-    expect(output).toContain("NEXT devdeck service restart worker # failed service");
+    expect(output).toContain("NEXT devdeck service restart worker --agent --wait 30 # targeted recovery");
     expect(output).not.toContain("> worker");
     expect(output).not.toContain("/repo/worker");
     expect(output.length).toBeLessThan(1200);
@@ -178,7 +178,7 @@ describe("format agent output", () => {
 
     expect(output).toContain("LOGS worker matched=12 returned=1 omitted=11");
     expect(output).toContain('E warning worker "WARNING queue latency above threshold x2"');
-    expect(output).toContain("NEXT devdeck logs worker --agent --grep warning --tail 30 # inspect warning context");
+    expect(output).toContain("NEXT devdeck logs worker --agent --severity warning --tail 40 # inspect bounded warning evidence");
     expect(output).not.toContain("> worker");
   });
 });
