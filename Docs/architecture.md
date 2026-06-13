@@ -1,6 +1,6 @@
-# Agent DevDeck Architecture
+# DevDeck Architecture
 
-Agent DevDeck is designed to be lightweight, local-first, and useful to both humans and agents. The same running session serves a browser dashboard and a bounded CLI control surface.
+DevDeck is designed to be lightweight, local-first, and useful to both humans and agents. The same running session serves a browser dashboard and a bounded CLI control surface.
 
 ---
 
@@ -82,7 +82,7 @@ sequenceDiagram
 
 ## 4. Resource Allocation & Bounded Limits
 
-Agent DevDeck runs entirely on your local machine with minimal CPU and RAM overhead:
+DevDeck runs entirely on your local machine with minimal CPU and RAM overhead:
 - **In-Memory Buffering:** DevDeck stores a bounded recent log buffer in memory and discards older lines.
 - **TCP Health Polling:** Port health checks run on a lightweight periodic timer to avoid network socket exhaustion.
 - **Orphan Process Prevention:** On CLI shutdown, DevDeck executes a tree-kill clean-up to ensure background processes started by DevDeck do not remain as zombie processes.

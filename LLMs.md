@@ -70,3 +70,17 @@ If a command fails, parse the `[DD-ERR-XXXX]` code and follow the printed hint b
 DevDeck is not just a CLI dependency. It is a behavior-shaping contract for agents.
 
 The goal is to replace terminal sprawl with bounded, predictable commands that minimize token waste and improve debugging discipline.
+
+## Evaluation Notes
+
+This repository ships two different evaluation layers:
+
+- `benchmarks/` for deterministic scripted regression and transcript-size measurement
+- `evals/live-agent/` for optional live agent task-completion evaluation
+
+In live evaluation runs:
+
+- `transcriptTokens` are local approximations using `tiktoken-o200k_base`
+- `providerUsage` is recorded separately only if the agent runtime exposes it
+
+Do not treat transcript tokens as billed provider usage, and do not claim universal savings from a single scenario or fixture.

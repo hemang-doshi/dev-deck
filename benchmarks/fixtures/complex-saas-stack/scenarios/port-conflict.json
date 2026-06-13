@@ -1,0 +1,44 @@
+{
+  "id": "port-conflict",
+  "description": "A helper process occupies the API port before startup.",
+  "measures": [
+    "startup",
+    "port conflict detection"
+  ],
+  "failureMode": "port 4000 occupied before API start",
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "EADDRINUSE",
+    "recoveryAction": "release port 4000 and restart api",
+    "finalState": "api startup blocked"
+  },
+  "runtime": {
+    "env": {
+      "unset": []
+    },
+    "api": {
+      "crashAfterMs": 0,
+      "crashOnDashboardHit": false
+    },
+    "worker": {
+      "noisy": false,
+      "stuckJob": false
+    },
+    "scheduler": {
+      "tickMs": 3000
+    },
+    "postgres": {
+      "readinessDelayMs": 900,
+      "migrationFailure": false
+    },
+    "redis": {
+      "unavailable": false
+    },
+    "externalApi": {
+      "mode": "healthy"
+    },
+    "portConflict": {
+      "port": 4000
+    }
+  }
+}

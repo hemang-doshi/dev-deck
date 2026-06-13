@@ -1,0 +1,42 @@
+{
+  "id": "startup-success",
+  "description": "Everything starts cleanly with realistic startup ordering and steady background activity.",
+  "measures": [
+    "startup",
+    "health verification",
+    "shutdown cleanup"
+  ],
+  "failureMode": "none",
+  "expected": {
+    "failedService": null,
+    "rootCauseContains": null,
+    "recoveryAction": "none",
+    "finalState": "all services healthy"
+  },
+  "runtime": {
+    "env": {
+      "unset": []
+    },
+    "api": {
+      "crashAfterMs": 0,
+      "crashOnDashboardHit": false
+    },
+    "worker": {
+      "noisy": false,
+      "stuckJob": false
+    },
+    "scheduler": {
+      "tickMs": 3000
+    },
+    "postgres": {
+      "readinessDelayMs": 900,
+      "migrationFailure": false
+    },
+    "redis": {
+      "unavailable": false
+    },
+    "externalApi": {
+      "mode": "healthy"
+    }
+  }
+}

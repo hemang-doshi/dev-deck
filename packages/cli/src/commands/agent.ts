@@ -10,9 +10,9 @@ export async function runAgentCommand(args: string[], io: CommandIo = defaultIo)
 
 function buildAgentSetupOutput(): string {
   return [
-    "# Agent DevDeck Setup",
+    "# DevDeck Setup",
     "",
-    "Use Agent DevDeck as the local control plane for your repository.",
+    "Use DevDeck as the local control plane for your repository.",
     "1. Inspect the repo and identify the services that should start together.",
     "2. Create or update `devdeck.yml` so each service has a command and cwd.",
     "3. Use `devdeck dev` to start everything, then use `devdeck status`, `devdeck logs`, and `devdeck snapshot` for bounded debugging.",

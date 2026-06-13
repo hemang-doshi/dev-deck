@@ -68,7 +68,7 @@ describe("agent commands", () => {
     expect(logs.stdout).not.toContain("boot complete");
 
     expect(snapshot.code).toBe(0);
-    expect(snapshot.stdout).toContain("# Agent DevDeck Snapshot");
+    expect(snapshot.stdout).toContain("# DevDeck Snapshot");
     expect(snapshot.stdout).toContain("worker");
     expect(snapshot.stdout).toContain("job failed");
     expect(snapshot.stdout).not.toContain("boot complete");
@@ -371,10 +371,18 @@ describe("agent commands", () => {
   it("returns json when start finds an already-running session", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer();
+    servers.push(fixture);
     await writeSessionFile(workspaceDirectory, {
       pid: process.pid,
-      url: "http://127.0.0.1:4545",
+      url: fixture.url,
+      configPath: path.join(workspaceDirectory, "devdeck.yml"),
     });
+    await writeFile(
+      path.join(workspaceDirectory, "devdeck.yml"),
+      ["project: sample", "services:", "  api:", "    command: npm run api", "    cwd: ."].join("\n"),
+      "utf8",
+    );
 
     const result = await runWithCapturedIo(["start", "--json"], workspaceDirectory);
 
@@ -568,7 +576,7 @@ describe("agent commands", () => {
     const result = await runWithCapturedIo(["agent", "setup"], workspaceDirectory);
 
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain("Agent DevDeck");
+    expect(result.stdout).toContain("DevDeck");
     expect(result.stdout).toContain("devdeck.yml");
     expect(result.stdout).toContain("services:");
     expect(result.stdout).toContain("Use `devdeck dev`");

@@ -32,5 +32,17 @@ function getContentType(assetPath: string): string {
     return "application/json; charset=utf-8";
   }
 
+  if (assetPath.endsWith(".svg")) {
+    return "image/svg+xml";
+  }
+
+  if (assetPath.endsWith(".png")) {
+    return "image/png";
+  }
+
+  if (assetPath.endsWith(".ico")) {
+    return "image/x-icon";
+  }
+
   return "application/octet-stream";
 }

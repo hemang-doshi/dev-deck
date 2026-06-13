@@ -1,0 +1,21 @@
+{
+  "id": "noisy-worker",
+  "description": "Worker emits frequent deterministic debug logs and periodic warnings.",
+  "fixture": "node-api-worker",
+  "goal": "Start the stack, identify the warning signal, verify that services are otherwise running, and avoid reading unnecessary log volume.",
+  "expected": {
+    "warningContains": "queue latency above threshold",
+    "failedService": null,
+    "finalHealthContains": "\"ok\":true"
+  },
+  "environment": {
+    "NOISY_WORKER": "1",
+    "WORKER_LOG_INTERVAL_MS": "500",
+    "WORKER_WARN_EVERY": "5"
+  },
+  "limits": {
+    "maxTurns": 8,
+    "maxToolCalls": 20,
+    "timeoutMs": 180000
+  }
+}

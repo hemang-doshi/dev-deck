@@ -12,7 +12,11 @@
     "benchmark:test": "node --test benchmarks/tests/*.test.mjs",
     "benchmark:validate": "node benchmarks/scripts/validate-v0.mjs",
     "benchmark:v0": "node benchmarks/scripts/run-v0.mjs",
-    "benchmark:realism": "node benchmarks/scripts/run-realism-v1.mjs"
+    "benchmark:realism": "node benchmarks/scripts/run-realism-v1.mjs",
+    "benchmark:product-validation": "node benchmarks/scripts/run-product-validation-matrix.mjs",
+    "eval:agent": "node evals/live-agent/src/cli.mjs",
+    "eval:agent:smoke": "node evals/live-agent/src/cli.mjs --mode smoke",
+    "eval:agent:codex": "node evals/live-agent/src/cli.mjs --mode codex"
   },
   "devDependencies": {
     "@adobe/css-tools": "4.4.4",

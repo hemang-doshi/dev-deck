@@ -1,5 +1,6 @@
 {
   "name": "@hemangdoshi/devdeck",
+  "description": "DevDeck is the local runtime control plane for agents and developers.",
   "version": "1.4.0",
   "private": false,
   "type": "module",
