@@ -1,6 +1,6 @@
-# <img src="assets/icon.png" width="48" height="48" valign="middle" /> Agent DevDeck
+# <img src="assets/devdeck-logo-full.png" width="320" alt="DevDeck" />
 
-> The local runtime control plane for AI coding agents.
+> The local runtime control plane for agents and developers.
 
 Agents are great at code.
 They are terrible at babysitting terminals.

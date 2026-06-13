@@ -1,4 +1,4 @@
-# Getting Started with Agent DevDeck
+# Getting Started with DevDeck
 
 This guide covers the `devdeck` binary, the compatible `devdeck.yml` config, and the new agent-first command flow.
 
@@ -6,7 +6,7 @@ This guide covers the `devdeck` binary, the compatible `devdeck.yml` config, and
 
 ## Prerequisites
 
-Agent DevDeck requires the following installed on your machine:
+DevDeck requires the following installed on your machine:
 - **Node.js:** version `18.x` or higher (we recommend version `20.x` or higher).
 - **npm:** node package manager.
 
@@ -41,7 +41,7 @@ npm run build
 
 ## 2. Initialize Project Configuration
 
-Before running Agent DevDeck, you need a configuration file named `devdeck.yml` at the root of your project.
+Before running DevDeck, you need a configuration file named `devdeck.yml` at the root of your project.
 
 To initialize a basic config automatically, run:
 ```bash
@@ -79,7 +79,7 @@ devdeck start
 ```
 *(If running from local source, run: `node packages/cli/dist/index.js start`)*
 
-Once launched, Agent DevDeck will:
+Once launched, DevDeck will:
 1. Spawn native process trees for all services listed in `devdeck.yml`.
 2. Bind `stdout` and `stderr` into a bounded in-memory log buffer.
 3. Serve the local dashboard and action endpoints on **`http://127.0.0.1:4545`** by default.

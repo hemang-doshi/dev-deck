@@ -1,4 +1,4 @@
-# Agent DevDeck Documentation
+# DevDeck Documentation
 
 This documentation hub covers the existing `devdeck` binary and config format, plus the agent-first command surface.
 
