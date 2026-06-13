@@ -11,6 +11,7 @@ import { runDevCommand } from "./commands/dev.js";
 import { runStartCommand } from "./commands/start.js";
 import { runInitCommand } from "./commands/init.js";
 import {
+  runDiagnoseCommand,
   runLogsCommand,
   runEventsCommand,
   runSessionCommand,
@@ -24,6 +25,7 @@ import type { CommandIo } from "./commands/init.js";
 import { createErrorResponse, printJsonResponse } from "./agent-response.js";
 import { createDevDeckErrorPayload } from "./agent-errors.js";
 import { CliUsageError } from "./cli-errors.js";
+import { parseOptionalWaitFlag, resolveStartWaitSeconds, type OptionalWaitFlag } from "./wait-flags.js";
 
 type CommandName =
   | "init"
@@ -33,6 +35,7 @@ type CommandName =
   | "status"
   | "logs"
   | "events"
+  | "diagnose"
   | "snapshot"
   | "stop"
   | "service"
@@ -50,7 +53,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
   const io = options.io ?? defaultIo;
 
   if (!command) {
-    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|events|snapshot|stop|service|session|config>\n");
+    io.stderr("Usage: devdeck <init|dev|start|agent|status|logs|events|diagnose|snapshot|stop|service|session|config>\n");
     return 1;
   }
 
@@ -82,6 +85,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         io,
         port: parsed.port,
         json: parsed.json,
+        agent: parsed.agent,
         waitSeconds: parsed.waitSeconds,
       });
     }
@@ -119,6 +123,16 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       }))
         ? 0
         : 1;
+    }
+
+    if (command === "diagnose") {
+      return (await runDiagnoseCommand(argv.slice(1), {
+        cwd: options.cwd,
+        io,
+        fetchImplementation: options.fetchImplementation,
+      }))
+        ? 0
+        : 4;
     }
 
     if (command === "snapshot") {
@@ -172,7 +186,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
 
     throw new CliUsageError(
       `Unknown command: ${command}`,
-      "Usage: devdeck <init|dev|start|agent|status|logs|events|snapshot|stop|service|session|config>",
+      "Usage: devdeck <init|dev|start|agent|status|logs|events|diagnose|snapshot|stop|service|session|config>",
     );
   } catch (error) {
     if (jsonMode) {
@@ -269,10 +283,11 @@ function parseDevArgs(args: string[]): { port?: number; json: boolean } {
   return { port, json };
 }
 
-function parseStartArgs(args: string[]): { port?: number; json: boolean; waitSeconds: number } {
+function parseStartArgs(args: string[]): { port?: number; json: boolean; agent: boolean; waitSeconds: number } {
   let port: number | undefined;
   let json = false;
-  let waitSeconds = 10;
+  let agent = false;
+  let waitFlag: OptionalWaitFlag = { specified: false };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -284,8 +299,14 @@ function parseStartArgs(args: string[]): { port?: number; json: boolean; waitSec
     }
 
     if (arg === "--wait") {
-      waitSeconds = parseWaitValue(args[index + 1]);
-      index += 1;
+      const parsed = parseOptionalWaitFlag(args, index);
+      waitFlag = parsed.flag;
+      index += parsed.consumed;
+      continue;
+    }
+
+    if (arg === "--agent") {
+      agent = true;
       continue;
     }
 
@@ -297,7 +318,12 @@ function parseStartArgs(args: string[]): { port?: number; json: boolean; waitSec
     throw new CliUsageError(`Unknown option: ${arg}`);
   }
 
-  return { port, json, waitSeconds };
+  if (json && agent) {
+    throw new CliUsageError("Cannot combine --json and --agent.");
+  }
+
+  const waitSeconds = resolveStartWaitSeconds({ agent, waitFlag });
+  return { port, json, agent, waitSeconds };
 }
 
 function parsePortValue(raw: string | undefined): number {
@@ -308,19 +334,6 @@ function parsePortValue(raw: string | undefined): number {
   const parsed = Number.parseInt(raw, 10);
   if (!/^\d+$/.test(raw) || !Number.isInteger(parsed) || parsed < 1) {
     throw new CliUsageError("Invalid --port value. Expected a positive integer.");
-  }
-
-  return parsed;
-}
-
-function parseWaitValue(raw: string | undefined): number {
-  if (!raw) {
-    throw new CliUsageError("Missing value for --wait.");
-  }
-
-  const parsed = Number.parseInt(raw, 10);
-  if (!/^\d+$/.test(raw) || !Number.isInteger(parsed) || parsed < 0 || parsed > 300) {
-    throw new CliUsageError("Invalid --wait value. Expected an integer from 0 to 300 seconds.");
   }
 
   return parsed;

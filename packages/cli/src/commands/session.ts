@@ -4,8 +4,10 @@ import { getEvents, getLogs, getSnapshot, postAction, streamEvents, type AgentCl
 import { createDevDeckErrorPayload, type DevDeckErrorPayload } from "../agent-errors.js";
 import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
 import { CliUsageError } from "../cli-errors.js";
-import { formatAgentLogs, formatAgentSnapshot, formatAgentStatus, formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
+import { diagnoseSnapshot } from "../agent-output/diagnosis.js";
+import { formatAgentDiagnosis, formatAgentLogs, formatAgentSnapshot, formatAgentStatus, formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
 import { clearStaleSession, inspectSession, type SessionInspection } from "../session-inspector.js";
+import { parseOptionalWaitFlag, resolveServiceWaitSeconds } from "../wait-flags.js";
 import type { CommandIo } from "./init.js";
 
 export type SessionCommandOptions = AgentClientOptions & {
@@ -442,12 +444,63 @@ export async function runSnapshotCommand(
   }
 }
 
+export async function runDiagnoseCommand(
+  args: string[],
+  options: SessionCommandOptions = {},
+): Promise<boolean> {
+  const flags = parseCommonFlags(args);
+
+  try {
+    const snapshot = await getSnapshot({
+      cwd: options.cwd,
+      fetchImplementation: options.fetchImplementation,
+      url: flags.url,
+    });
+    const diagnosis = diagnoseSnapshot(snapshot);
+
+    if (flags.json) {
+      printJsonResponse(
+        createSuccessResponse(
+          {
+            command: "diagnose",
+            project: snapshot.project,
+            summary: diagnosis.cause,
+          },
+          diagnosis,
+        ),
+        getWriter(options.io),
+      );
+    } else {
+      writeOutput(options.io, formatAgentDiagnosis(snapshot));
+    }
+
+    return diagnosis.state !== "degraded";
+  } catch (error) {
+    if (!flags.json) {
+      throw error;
+    }
+
+    printJsonResponse(
+      createErrorResponse(
+        {
+          command: "diagnose",
+          summary: "Unable to diagnose the current DevDeck session.",
+        },
+        toAgentErrorPayload(error, "diagnose"),
+      ),
+      getWriter(options.io),
+    );
+    return false;
+  }
+}
+
 export async function runStopCommand(
   args: string[],
   options: SessionCommandOptions = {},
 ): Promise<boolean> {
   const flags = parseCommonFlags(args);
   try {
+    const startedAt = Date.now();
     await postAction(
       { action: "stop-session" },
       {
@@ -467,6 +520,11 @@ export async function runStopCommand(
           { requested: true },
         ),
         getWriter(options.io),
+      );
+    } else if (flags.agent) {
+      writeOutput(
+        options.io,
+        `STOP ok elapsed=${((Date.now() - startedAt) / 1000).toFixed(1)}s\nNEXT none # cleanup complete\n`,
       );
     } else {
       writeOutput(options.io, "Requested stop-session\n");
@@ -532,7 +590,7 @@ export async function runServiceCommand(
 ): Promise<boolean> {
   const action = args[0];
   const serviceName = args[1];
-  const flags = parseCommonFlags(args.slice(2));
+  const flags = parseServiceFlags(args.slice(2));
 
   if (action !== "start" && action !== "stop" && action !== "restart") {
     throw new CliUsageError("Usage: devdeck service <start|stop|restart> <name> [--url URL]");
@@ -543,6 +601,7 @@ export async function runServiceCommand(
   }
 
   try {
+    const startedAt = Date.now();
     await postAction(
       { action, serviceName },
       {
@@ -552,21 +611,55 @@ export async function runServiceCommand(
       },
     );
 
+    const waitSeconds = resolveServiceWaitSeconds({
+      agent: flags.agent,
+      waitFlag: flags.waitFlag,
+    });
+    const waited = waitSeconds > 0
+      ? await waitForServiceActionResult({
+        cwd: options.cwd,
+        fetchImplementation: options.fetchImplementation,
+        url: flags.url,
+        serviceName,
+        action,
+        waitSeconds,
+      })
+      : null;
+
     if (flags.json) {
       printJsonResponse(
         createSuccessResponse(
           {
             command: `service.${action}`,
-            summary: `Requested ${action} for ${serviceName}.`,
+            summary: waited
+              ? `Completed ${action} for ${serviceName}.`
+              : `Requested ${action} for ${serviceName}.`,
           },
-          { action, serviceName, requested: true },
+          {
+            action,
+            serviceName,
+            requested: true,
+            waitSeconds,
+            result: waited,
+          },
         ),
         getWriter(options.io),
+      );
+    } else if (flags.agent) {
+      writeOutput(
+        options.io,
+        formatAgentServiceActionResult({
+          action,
+          serviceName,
+          elapsedMs: Date.now() - startedAt,
+          snapshot: waited?.snapshot ?? null,
+          ok: waited?.ok ?? true,
+        }),
       );
     } else {
       writeOutput(options.io, `Requested ${action} for ${serviceName}\n`);
     }
-    return true;
+    return waited?.ok ?? true;
   } catch (error) {
     if (!flags.json) {
       throw error;
@@ -740,6 +833,53 @@ function parseCommonFlags(args: string[]): { json: boolean; agent: boolean; url?
   }
 
   return { json, agent, url };
+}
+
+function parseServiceFlags(args: string[]): {
+  json: boolean;
+  agent: boolean;
+  url?: string;
+  waitFlag: { specified: boolean; seconds?: number };
+} {
+  let json = false;
+  let agent = false;
+  let url: string | undefined;
+  let waitFlag: { specified: boolean; seconds?: number } = { specified: false };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+
+    if (arg === "--agent") {
+      agent = true;
+      continue;
+    }
+
+    if (arg === "--wait") {
+      const parsed = parseOptionalWaitFlag(args, index);
+      waitFlag = parsed.flag;
+      index += parsed.consumed;
+      continue;
+    }
+
+    if (arg === "--url") {
+      url = requireValue(args[index + 1], "--url");
+      index += 1;
+      continue;
+    }
+
+    throw new CliUsageError(`Unknown option: ${arg}`);
+  }
+
+  if (json && agent) {
+    throw new CliUsageError("Cannot combine --json and --agent.");
+  }
+
+  return { json, agent, url, waitFlag };
 }
 
 function parseOptionalTail(args: string[]): number {
@@ -957,6 +1097,131 @@ function errorForInspection(inspection: Exclude<SessionInspection, { state: "run
       },
     ],
   });
+}
+
+async function waitForServiceActionResult(options: {
+  cwd: string | undefined;
+  fetchImplementation?: typeof fetch;
+  url?: string;
+  serviceName: string;
+  action: "start" | "stop" | "restart";
+  waitSeconds: number;
+}): Promise<{
+  ok: boolean;
+  snapshot: SessionSnapshot | null;
+}> {
+  const deadline = Date.now() + options.waitSeconds * 1000;
+  let latestSnapshot: SessionSnapshot | null = null;
+
+  while (Date.now() <= deadline) {
+    const snapshot = await getSnapshot({
+      cwd: options.cwd,
+      fetchImplementation: options.fetchImplementation,
+      url: options.url,
+    }).catch(() => null);
+
+    if (snapshot) {
+      latestSnapshot = snapshot;
+      const service = snapshot.services.find((entry) => entry.name === options.serviceName);
+      if (service && serviceReachedTargetState(service, options.action)) {
+        return {
+          ok: serviceIsHealthyEnough(service, options.action),
+          snapshot,
+        };
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  return {
+    ok: false,
+    snapshot: latestSnapshot,
+  };
+}
+
+function serviceReachedTargetState(
+  service: SessionSnapshot["services"][number],
+  action: "start" | "stop" | "restart",
+): boolean {
+  if (action === "stop") {
+    return (service.status === "stopped" || service.status === "idle" || service.status === "exited") && service.pid === null;
+  }
+
+  if (service.status === "error" || service.status === "exited" || service.status === "blocked" || service.readiness === "failed") {
+    return true;
+  }
+
+  if (service.status !== "running") {
+    return false;
+  }
+
+  if (service.readinessProbe && service.readiness !== "ready") {
+    return false;
+  }
+
+  if (service.healthProbe && service.health !== "healthy") {
+    return false;
+  }
+
+  return true;
+}
+
+function serviceIsHealthyEnough(
+  service: SessionSnapshot["services"][number],
+  action: "start" | "stop" | "restart",
+): boolean {
+  if (action === "stop") {
+    return (service.status === "stopped" || service.status === "idle" || service.status === "exited") && service.pid === null;
+  }
+
+  return service.status === "running" &&
+    (!service.readinessProbe || service.readiness === "ready") &&
+    (!service.healthProbe || service.health === "healthy");
+}
+
+function formatAgentServiceActionResult(options: {
+  action: "start" | "stop" | "restart";
+  serviceName: string;
+  elapsedMs: number;
+  snapshot: SessionSnapshot | null;
+  ok: boolean;
+}): string {
+  const elapsed = `${(options.elapsedMs / 1000).toFixed(1)}s`;
+  const service = options.snapshot?.services.find((entry) => entry.name === options.serviceName);
+
+  if (!service) {
+    return `SERVICE ${options.action} degraded svc=${options.serviceName} elapsed=${elapsed}\nNEXT devdeck diagnose --agent # inspect failed recovery\n`;
+  }
+
+  const status = options.ok ? "ok" : "degraded";
+  const lines = [
+    `SERVICE ${options.action} ${status} svc=${service.name} ready=${service.readiness} h=${service.health} elapsed=${elapsed}`,
+  ];
+
+  if (!options.ok) {
+    lines.push(
+      `S ${service.name} ${service.status} ready=${service.readiness} h=${service.health} r=${service.restartCount} issue=${deriveServiceIssue(service)}${service.lastError ? ` msg=${JSON.stringify(service.lastError)}` : ""}`,
+    );
+    lines.push("NEXT devdeck diagnose --agent # inspect failed recovery");
+  } else {
+    lines.push("NEXT devdeck status --agent # verify stack state");
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
+function deriveServiceIssue(service: SessionSnapshot["services"][number]): string {
+  if (service.status === "error" || service.status === "exited") {
+    return "service_failed";
+  }
+  if (service.status === "blocked") {
+    return "blocked";
+  }
+  if (service.health === "unreachable" || service.health === "degraded" || service.readiness === "failed") {
+    return "health_unreachable";
+  }
+  return "none";
 }
 
 const defaultIo: CommandIo = {

@@ -6,9 +6,11 @@ import { DevdeckError, findDevdeckConfigPath } from "@devdeck/config";
 import type { SessionSnapshot } from "@devdeck/core";
 import { createDevDeckErrorPayload } from "../agent-errors.js";
 import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
+import { formatAgentStatus } from "../format-agent-output.js";
 import { getSnapshot } from "../agent-client.js";
 import { resolveSessionStatePath } from "../session-state.js";
 import { clearStaleSession, inspectSession } from "../session-inspector.js";
+import { diagnoseSnapshot } from "../agent-output/diagnosis.js";
 import type { CommandIo } from "./init.js";
 
 export type StartCommandOptions = {
@@ -16,6 +18,7 @@ export type StartCommandOptions = {
   io?: CommandIo;
   port?: number;
   json?: boolean;
+  agent?: boolean;
   waitSeconds?: number;
 };
 
@@ -100,7 +103,7 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
   const out = openSync(logFile, "a");
   const err = openSync(logFile, "a");
 
-  if (!options.json) {
+  if (!options.json && !options.agent) {
     io.stdout("Starting DevDeck in the background...\n");
   }
 
@@ -205,7 +208,7 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
             createDevDeckErrorPayload({
               code: "DD_STARTUP_DEGRADED",
               message: failureSummary,
-              hint: "Run devdeck status --agent or devdeck logs <service> for bounded failure evidence.",
+              hint: "Run devdeck diagnose --agent to identify the root cause and recovery action.",
               severity: "error",
               retryable: true,
               evidence: [
@@ -219,14 +222,21 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
               nextActions: [
                 {
                   type: "command",
-                  command: "devdeck status --agent",
-                  reason: "Inspect the degraded service state.",
+                  command: "devdeck diagnose --agent",
+                  reason: "Identify the root cause and recovery action.",
                 },
               ],
             }),
           ),
           io.stdout,
         );
+      } else if (options.agent) {
+        writeOutput(io, formatAgentStartResult({
+          kind: "degraded",
+          project: sessionState.project,
+          elapsedMs: Date.now() - (startDeadline - waitSeconds * 1000),
+          snapshot: readinessResult.snapshot,
+        }));
       } else {
         io.stderr(`[DD-ERR-0016] ${failureSummary}\n`);
         io.stderr("Hint: Run 'devdeck status --agent' or 'devdeck logs <service>' for bounded failure evidence.\n");
@@ -269,6 +279,13 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
           ),
           io.stdout,
         );
+      } else if (options.agent) {
+        writeOutput(io, formatAgentStartResult({
+          kind: "timeout",
+          project: sessionState.project,
+          elapsedMs: Date.now() - (startDeadline - waitSeconds * 1000),
+          snapshot: readinessResult.snapshot,
+        }));
       } else {
         io.stderr(`[DD-ERR-0017] ${message}\n`);
         io.stderr("Hint: Run 'devdeck status --agent' to inspect the partial runtime state.\n");
@@ -294,6 +311,14 @@ export async function runStartCommand(options: StartCommandOptions = {}): Promis
       ),
       io.stdout,
     );
+  } else if (options.agent) {
+    const snapshot = await getSnapshot({ cwd: configDir }).catch(() => null);
+    writeOutput(io, formatAgentStartResult({
+      kind: "ok",
+      project: sessionState.project,
+      elapsedMs: Date.now() - (startDeadline - waitSeconds * 1000),
+      snapshot,
+    }));
   } else {
     io.stdout("DevDeck started successfully in the background!\n");
     io.stdout(`PID: ${sessionState.pid}\n`);
@@ -425,4 +450,47 @@ function summarizeStartupFailure(snapshot: SessionSnapshot): string {
     .slice(0, 3)
     .map((service) => `${service.name}: ${service.lastError ?? `status=${service.status} readiness=${service.readiness}`}`)
     .join("; ");
+}
+
+function formatAgentStartResult(options: {
+  kind: "ok" | "degraded" | "timeout";
+  project: string;
+  elapsedMs: number;
+  snapshot: SessionSnapshot | null;
+}): string {
+  const elapsed = `${(options.elapsedMs / 1000).toFixed(1)}s`;
+
+  if (!options.snapshot) {
+    return [
+      `START ${options.kind} project=${options.project} elapsed=${elapsed}`,
+      `NEXT devdeck diagnose --agent # inspect unresolved startup state`,
+      "",
+    ].join("\n");
+  }
+
+  const degraded = options.snapshot.services.filter((service) =>
+    service.status === "error" ||
+    service.status === "exited" ||
+    service.status === "blocked" ||
+    service.readiness === "failed" ||
+    service.health === "unreachable"
+  ).length;
+  const running = options.snapshot.services.filter((service) => service.status === "running").length;
+  const header = `START ${options.kind} project=${options.project} services=${options.snapshot.services.length} running=${running} degraded=${degraded} elapsed=${elapsed}`;
+
+  if (options.kind === "ok") {
+    return `${header}\n${formatAgentStatus(options.snapshot)}`;
+  }
+
+  const diagnosis = diagnoseSnapshot(options.snapshot);
+  const statusLines = formatAgentStatus(options.snapshot)
+    .trimEnd()
+    .split("\n")
+    .filter((line) => !line.startsWith("NEXT "));
+  statusLines.push("NEXT devdeck diagnose --agent # identify root cause and recovery action");
+  return `${header}\n${statusLines.join("\n")}\n`;
+}
+
+function writeOutput(io: CommandIo, message: string): void {
+  io.stdout(message);
 }
