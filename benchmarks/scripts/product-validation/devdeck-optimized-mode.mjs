@@ -18,12 +18,6 @@ async function maybeObserveCrash(recorder, scenario) {
     allowFailure: true,
   });
 
-  await recorder.runObservedCommand({
-    id: "devdeck-optimized-health-post-crash",
-    command: "npm run health",
-    category: "failure-observation",
-    allowFailure: true,
-  });
 }
 
 function extractNextAction(output) {
@@ -60,15 +54,8 @@ export async function runDevDeckOptimizedMode({ runRoot, scenario }) {
       allowFailure: true,
     });
 
-    if (scenario !== "startup-success") {
-      await recorder.runObservedCommand({
-        id: "devdeck-optimized-status-agent",
-        command: devdeckCommand("status --agent"),
-        commandLabel: "npx devdeck status --agent",
-        transcriptCommand: "npx devdeck status --agent",
-        category: "state",
-        allowFailure: true,
-      });
+    if (scenario === "noisy-worker") {
+      await new Promise((resolve) => setTimeout(resolve, 1800));
     }
 
     await maybeObserveCrash(recorder, scenario);

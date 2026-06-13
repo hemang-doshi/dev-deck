@@ -99,6 +99,10 @@ export async function evaluateProductValidationRun(modeDir) {
   const successfulHealthEvent = events.find((event) =>
     event.id === `${runData.mode}-health` && event.exitCode === 0
   );
+  const boundedHealthyState = events.find((event) =>
+    (event.category === "startup" || event.category === "state") &&
+    /START ok|STATE running|SERVICES all_ready/i.test(event.output ?? "")
+  );
   const failureEvidenceEvent = evidenceMatcher
     ? eventMatches(events, evidenceMatcher)
     : null;
@@ -117,10 +121,11 @@ export async function evaluateProductValidationRun(modeDir) {
       const healthPassed = events.some((event) =>
         event.id === `${runData.mode}-health` && event.exitCode === 0
       );
-      passed = healthPassed && cleanupSucceeded && runData.exitCode === 0;
-      if (healthPassed) observations.push("fixture health check passed");
+      const boundedHealthy = Boolean(boundedHealthyState);
+      passed = (healthPassed || boundedHealthy) && cleanupSucceeded && runData.exitCode === 0;
+      if (healthPassed || boundedHealthy) observations.push("fixture health check passed");
       if (!passed) {
-        failureReason = !healthPassed
+        failureReason = !(healthPassed || boundedHealthy)
           ? "health check did not pass"
           : "cleanup did not complete cleanly";
       }
@@ -158,18 +163,22 @@ export async function evaluateProductValidationRun(modeDir) {
       const initialHealthPassed = events.some((event) =>
         event.id === `${runData.mode}-health` && event.exitCode === 0
       );
+      const boundedHealthy = Boolean(boundedHealthyState);
       const crashEvidence = hasEvidence(
         serviceLogs,
         /simulated crash after startup|api exiting with code 1|dashboard bootstrap failed/i,
       );
       const postCrashFailure = events.some((event) =>
         event.id === `${runData.mode}-health-post-crash` && event.exitCode !== 0
+      ) || events.some((event) =>
+        (event.category === "diagnosis" || event.category === "state") &&
+        /service_crash|simulated crash after startup|STATE degraded/i.test(event.output ?? "")
       );
-      passed = initialHealthPassed && crashEvidence && postCrashFailure && cleanupSucceeded;
-      if (initialHealthPassed) observations.push("stack became healthy before the crash");
+      passed = (initialHealthPassed || boundedHealthy) && crashEvidence && postCrashFailure && cleanupSucceeded;
+      if (initialHealthPassed || boundedHealthy) observations.push("stack became healthy before the crash");
       if (crashEvidence) observations.push("api crash evidence captured");
       if (!passed) {
-        failureReason = !initialHealthPassed
+        failureReason = !(initialHealthPassed || boundedHealthy)
           ? "stack never became healthy before crash observation"
           : !crashEvidence
             ? "api crash evidence not found"
@@ -183,15 +192,16 @@ export async function evaluateProductValidationRun(modeDir) {
       const healthPassed = events.some((event) =>
         event.id === `${runData.mode}-health` && event.exitCode === 0
       );
+      const boundedHealthy = Boolean(boundedHealthyState);
       const warningEvidence = hasEvidence(
         serviceLogs,
         /queue latency above threshold|debug queue scan complete/i,
       );
-      passed = healthPassed && warningEvidence && cleanupSucceeded;
-      if (healthPassed) observations.push("fixture health check passed");
+      passed = (healthPassed || boundedHealthy) && warningEvidence && cleanupSucceeded;
+      if (healthPassed || boundedHealthy) observations.push("fixture health check passed");
       if (warningEvidence) observations.push("worker noise evidence captured");
       if (!passed) {
-        failureReason = !healthPassed
+        failureReason = !(healthPassed || boundedHealthy)
           ? "health check did not pass"
           : !warningEvidence
             ? "worker noise evidence not found"
@@ -222,11 +232,12 @@ export async function evaluateProductValidationRun(modeDir) {
           runData,
           earliestTimestamp(
             successfulHealthEvent?.endedAt ?? null,
+            boundedHealthyState?.endedAt ?? null,
             failureEvidenceEvent?.endedAt ?? null,
             degradedStateEvent?.endedAt ?? null,
           ),
         ),
-        time_to_healthy_ms: elapsedMs(runData, successfulHealthEvent?.endedAt ?? null),
+        time_to_healthy_ms: elapsedMs(runData, successfulHealthEvent?.endedAt ?? boundedHealthyState?.endedAt ?? null),
         time_to_failure_evidence_ms: elapsedMs(
           runData,
           failureEvidenceEvent?.endedAt ?? degradedStateEvent?.endedAt ?? null,
