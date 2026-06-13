@@ -1,0 +1,42 @@
+{
+  "id": "noisy-worker",
+  "description": "The stack remains healthy while the worker emits deterministic high-volume benign logs and periodic warnings.",
+  "measures": [
+    "startup",
+    "log volume",
+    "warning discovery"
+  ],
+  "failureMode": "worker log noise without hard service failure",
+  "expected": {
+    "failedService": null,
+    "rootCauseContains": "queue latency above threshold",
+    "recoveryAction": "inspect worker only if warning persists",
+    "finalState": "all services healthy with noisy worker"
+  },
+  "runtime": {
+    "env": {
+      "unset": []
+    },
+    "api": {
+      "crashAfterMs": 0,
+      "crashOnDashboardHit": false
+    },
+    "worker": {
+      "noisy": true,
+      "stuckJob": false
+    },
+    "scheduler": {
+      "tickMs": 3000
+    },
+    "postgres": {
+      "readinessDelayMs": 900,
+      "migrationFailure": false
+    },
+    "redis": {
+      "unavailable": false
+    },
+    "externalApi": {
+      "mode": "healthy"
+    }
+  }
+}

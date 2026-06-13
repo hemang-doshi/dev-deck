@@ -1,0 +1,44 @@
+{
+  "id": "missing-env",
+  "description": "The API fails early because required environment values are missing.",
+  "measures": [
+    "startup",
+    "configuration failure detection"
+  ],
+  "failureMode": "required env removed from API startup context",
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "missing required env",
+    "recoveryAction": "restore DATABASE_URL and SESSION_SECRET",
+    "finalState": "api startup blocked"
+  },
+  "runtime": {
+    "env": {
+      "unset": [
+        "DATABASE_URL",
+        "SESSION_SECRET"
+      ]
+    },
+    "api": {
+      "crashAfterMs": 0,
+      "crashOnDashboardHit": false
+    },
+    "worker": {
+      "noisy": false,
+      "stuckJob": false
+    },
+    "scheduler": {
+      "tickMs": 3000
+    },
+    "postgres": {
+      "readinessDelayMs": 900,
+      "migrationFailure": false
+    },
+    "redis": {
+      "unavailable": false
+    },
+    "externalApi": {
+      "mode": "healthy"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "devdeck-benchmark-complex-saas-stack",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start:web": "node apps/web/server.mjs",
+    "start:api": "node apps/api/server.mjs",
+    "start:worker": "node apps/worker/worker.mjs",
+    "start:scheduler": "node apps/scheduler/scheduler.mjs",
+    "start:mock-external-api": "node services/mock-external-api/server.mjs",
+    "start:postgres": "node infra/postgres/server.mjs",
+    "start:redis": "node infra/redis/server.mjs",
+    "scenario:startup-success": "node scripts/cleanup.mjs && node scripts/apply-scenario.mjs startup-success",
+    "scenario:missing-env": "node scripts/cleanup.mjs && node scripts/apply-scenario.mjs missing-env",
+    "scenario:port-conflict": "node scripts/cleanup.mjs && node scripts/apply-scenario.mjs port-conflict && node scripts/occupy-port.mjs 4000 --daemonize",
+    "scenario:api-crash-after-start": "node scripts/cleanup.mjs && node scripts/apply-scenario.mjs api-crash-after-start",
+    "scenario:noisy-worker": "node scripts/cleanup.mjs && node scripts/apply-scenario.mjs noisy-worker",
+    "cleanup": "node scripts/cleanup.mjs",
+    "health": "node scripts/check-health.mjs"
+  }
+}
