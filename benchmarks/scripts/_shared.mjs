@@ -106,6 +106,7 @@ export async function createCommandEvent({
     commandLabel,
     command,
     category,
+    output,
     characters: count.characters,
     tokens: count.tokens,
     primaryTokens: count.tokens[primaryTokenizer],

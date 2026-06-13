@@ -42,3 +42,8 @@ benchmarks/results/product-validation/<timestamp>/matrix-summary.md
 ```
 
 This harness does not claim provider-reported token savings. It only builds deterministic local measurement infrastructure for the complex stack fixture.
+
+Interpret the matrix carefully:
+
+- A faster failing run is not a product win.
+- The benchmark should distinguish successful fast paths from actionable fast failures and from non-actionable fast failures.

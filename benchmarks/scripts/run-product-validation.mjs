@@ -26,6 +26,7 @@ export async function runProductValidation({ scenario, mode, runRoot }) {
 
   await writeJson(path.join(modeDir, "run.json"), {
     ...runData,
+    timing: evaluation.actual.timing,
     evaluation: {
       passed: evaluation.passed,
       failureReason: evaluation.failureReason,

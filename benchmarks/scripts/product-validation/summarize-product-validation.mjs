@@ -3,6 +3,9 @@ import path from "node:path";
 import { readJson, writeJson } from "../_shared.mjs";
 
 function formatDuration(durationMs) {
+  if (durationMs === null || durationMs === undefined) {
+    return "";
+  }
   return `${(durationMs / 1000).toFixed(1)}s`;
 }
 
@@ -15,6 +18,9 @@ function summarizeRow({ runData, evaluation }) {
     toolCalls: runData.metrics.totalToolCalls,
     runtimeManagementToolCalls: runData.metrics.runtimeManagementToolCalls,
     durationMs: runData.durationMs,
+    firstSignalMs: evaluation.actual.timing?.time_to_first_signal_ms ?? null,
+    healthyMs: evaluation.actual.timing?.time_to_healthy_ms ?? null,
+    failureEvidenceMs: evaluation.actual.timing?.time_to_failure_evidence_ms ?? null,
     failure: evaluation.failureReason,
   };
 }
@@ -27,11 +33,15 @@ export async function writeProductValidationSummary(runRoot, rows) {
   const lines = [
     "# Product Validation Matrix",
     "",
-    "| Scenario | Mode | Passed | Transcript tokens | Tool calls | Runtime-management tool calls | Duration | Failure |",
-    "|---|---|---:|---:|---:|---:|---:|---|",
+    "| Scenario | Mode | Passed | Tokens | Tool calls | Runtime calls | Duration | First signal | Healthy | Failure evidence | Failure |",
+    "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ...summaryRows.map((row) =>
-      `| ${row.scenario} | ${row.mode} | ${row.passed ? "yes" : "no"} | ${row.transcriptTokens} | ${row.toolCalls} | ${row.runtimeManagementToolCalls} | ${formatDuration(row.durationMs)} | ${row.failure ?? ""} |`
+      `| ${row.scenario} | ${row.mode} | ${row.passed ? "yes" : "no"} | ${row.transcriptTokens} | ${row.toolCalls} | ${row.runtimeManagementToolCalls} | ${formatDuration(row.durationMs)} | ${formatDuration(row.firstSignalMs)} | ${formatDuration(row.healthyMs)} | ${formatDuration(row.failureEvidenceMs)} | ${row.failure ?? ""} |`
     ),
+    "",
+    "Interpretation:",
+    "- A faster failing run is not a product win.",
+    "- Prefer successful fast paths first, then actionable fast failures, over non-actionable fast failures.",
     "",
     "Provider-reported tokens are not available in this deterministic harness slice. Transcript tokens are local tokenizer counts from the captured command transcript.",
   ];

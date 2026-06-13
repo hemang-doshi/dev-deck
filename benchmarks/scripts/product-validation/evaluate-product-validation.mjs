@@ -24,6 +24,40 @@ function hasEvidence(chunks, matcher) {
   return chunks.some((chunk) => matcher.test(chunk));
 }
 
+function eventMatches(events, matcher) {
+  return events.find((event) => matcher.test(event.output ?? ""));
+}
+
+function elapsedMs(runData, isoTimestamp) {
+  if (!isoTimestamp) {
+    return null;
+  }
+  return new Date(isoTimestamp).getTime() - new Date(runData.startedAt).getTime();
+}
+
+function earliestTimestamp(...timestamps) {
+  const values = timestamps.filter(Boolean).map((value) => new Date(value).getTime());
+  if (values.length === 0) {
+    return null;
+  }
+  return new Date(Math.min(...values)).toISOString();
+}
+
+function buildScenarioEvidenceMatcher(scenario) {
+  switch (scenario) {
+    case "missing-env":
+      return /missing required env|startup config error/i;
+    case "port-conflict":
+      return /EADDRINUSE|address already in use/i;
+    case "api-crash-after-start":
+      return /simulated crash after startup|api exiting with code 1|dashboard bootstrap failed/i;
+    case "noisy-worker":
+      return /queue latency above threshold|debug queue scan complete/i;
+    default:
+      return null;
+  }
+}
+
 function collectActual(runData, events) {
   const categories = events.reduce((accumulator, event) => {
     accumulator[event.category] = (accumulator[event.category] ?? 0) + 1;
@@ -55,13 +89,24 @@ export async function evaluateProductValidationRun(modeDir) {
   const observations = [];
   let passed = false;
   let failureReason = null;
+  const evidenceMatcher = buildScenarioEvidenceMatcher(runData.scenario);
 
   const healthEvent = events.find((event) =>
     event.id === `${runData.mode}-health` || event.id === `${runData.mode}-health-post-crash`
   );
+  const successfulHealthEvent = events.find((event) =>
+    event.id === `${runData.mode}-health` && event.exitCode === 0
+  );
+  const failureEvidenceEvent = evidenceMatcher
+    ? eventMatches(events, evidenceMatcher)
+    : null;
+  const degradedStateEvent = events.find((event) =>
+    event.category === "state" && /STATE degraded|issue=|I error /i.test(event.output ?? "")
+  );
   const cleanupSucceeded = events.some((event) =>
     event.category === "cleanup" && event.exitCode === 0
   );
+  const cleanupEvents = events.filter((event) => event.category === "cleanup");
 
   switch (runData.scenario) {
     case "startup-success": {
@@ -167,6 +212,26 @@ export async function evaluateProductValidationRun(modeDir) {
       transcriptContainsExpectedRootCause: scenarioDefinition.expected.rootCauseContains
         ? transcript.includes(scenarioDefinition.expected.rootCauseContains)
         : null,
+      timing: {
+        total_duration_ms: runData.durationMs,
+        time_to_first_signal_ms: elapsedMs(
+          runData,
+          earliestTimestamp(
+            successfulHealthEvent?.endedAt ?? null,
+            failureEvidenceEvent?.endedAt ?? null,
+            degradedStateEvent?.endedAt ?? null,
+          ),
+        ),
+        time_to_healthy_ms: elapsedMs(runData, successfulHealthEvent?.endedAt ?? null),
+        time_to_failure_evidence_ms: elapsedMs(
+          runData,
+          failureEvidenceEvent?.endedAt ?? degradedStateEvent?.endedAt ?? null,
+        ),
+        time_to_cleanup_ms: cleanupEvents.length > 0
+          ? new Date(cleanupEvents.at(-1).endedAt).getTime()
+              - new Date(cleanupEvents[0].startedAt).getTime()
+          : null,
+      },
     },
   };
 

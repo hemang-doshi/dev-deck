@@ -371,10 +371,18 @@ describe("agent commands", () => {
   it("returns json when start finds an already-running session", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
+    const fixture = await createFixtureServer();
+    servers.push(fixture);
     await writeSessionFile(workspaceDirectory, {
       pid: process.pid,
-      url: "http://127.0.0.1:4545",
+      url: fixture.url,
+      configPath: path.join(workspaceDirectory, "devdeck.yml"),
     });
+    await writeFile(
+      path.join(workspaceDirectory, "devdeck.yml"),
+      ["project: sample", "services:", "  api:", "    command: npm run api", "    cwd: ."].join("\n"),
+      "utf8",
+    );
 
     const result = await runWithCapturedIo(["start", "--json"], workspaceDirectory);
 
