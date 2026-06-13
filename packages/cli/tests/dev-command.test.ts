@@ -47,7 +47,7 @@ describe("runDevCommand", () => {
 
     expect(stdout.join("")).toContain("Project: my-app");
     expect(stdout.join("")).toContain("- web: node -e \"console.log('ready')\" | cwd=");
-    expect(stdout.join("")).toContain("[web:stdout] ready");
+    expect(stdout.join("")).toContain("[web] Status changed: RUNNING");
   });
 
   it("uses the requested port and cleans up the runtime session file", async () => {
