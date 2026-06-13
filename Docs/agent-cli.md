@@ -1,6 +1,6 @@
-# Agent DevDeck CLI
+# DevDeck Agent CLI
 
-Agent DevDeck keeps the existing `devdeck` binary and `devdeck.yml` config format, but adds a bounded CLI surface for local agents and terminal-first workflows.
+DevDeck keeps the existing `devdeck` binary and `devdeck.yml` config format, but adds a bounded CLI surface for local agents and terminal-first workflows.
 
 ## Core model
 

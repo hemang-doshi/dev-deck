@@ -32,3 +32,7 @@ Docs/superpowers/
 .devdeck/
 devdeck.yml
 !benchmarks/fixtures/node-api-worker/devdeck.yml
+
+# Live eval local artifacts
+evals/live-agent/results/*
+!evals/live-agent/results/.gitkeep

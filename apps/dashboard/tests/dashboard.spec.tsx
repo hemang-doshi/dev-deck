@@ -89,6 +89,9 @@ describe("DashboardShell", () => {
     render(<DashboardShell client={client.client} />);
 
     expect(screen.queryByText("Snapshot metadata ready to paste into an issue, prompt, or handoff.")).not.toBeInTheDocument();
+    expect(screen.getByText("DevDeck")).toBeInTheDocument();
+    expect(screen.getByText("Local runtime control plane for agents and developers")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "demo" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy debug context" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Copy debug context" }));

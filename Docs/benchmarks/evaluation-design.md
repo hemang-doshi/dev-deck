@@ -9,7 +9,7 @@ Transcript size is one measurement layer, not a complete judgment of DevDeck.
 3. **Diagnosis cost** measures the commands and context required to identify a failed service and root cause.
 4. **Recovery cost** measures the commands and context required to apply a recovery action and verify the result.
 5. **Repeated context growth** measures how observation cost accumulates across noisy or iterative debugging sessions.
-6. **Future live-agent loop measurement** will use provider-reported usage for complete prompt, response, and tool-observation accounting.
+6. **Live-agent loop measurement** lives under `evals/live-agent/` and uses provider-reported usage only when the runtime exposes it.
 
 ## Scenario Metadata
 
@@ -26,6 +26,22 @@ The scripted evaluator compares generated transcripts, command sequences, observ
 These checks are intentionally deterministic. They verify that a benchmark run completed the scripted task; they do not score model reasoning quality.
 
 Current realism runs compare older full-state modes with compact `--agent` modes so transcript reduction can be measured without changing the scripted recovery task.
+
+## Live-Agent Evaluation
+
+The live-agent harness is intentionally separate from deterministic benchmarks.
+
+It compares:
+
+- same fixture
+- same scenario
+- same task prompt
+- same agent runtime
+- baseline shell workflow versus DevDeck workflow
+
+The live harness scores task completion deterministically from transcripts and final answers. It records transcript-token approximations with `tiktoken-o200k_base` and stores provider usage separately when available.
+
+If Codex CLI auth or supported non-interactive execution is unavailable, the live harness writes an explicit skip artifact instead of fabricating results.
 
 ## Interpretation
 

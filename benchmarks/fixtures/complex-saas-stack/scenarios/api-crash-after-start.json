@@ -1,0 +1,42 @@
+{
+  "id": "api-crash-after-start",
+  "description": "The API becomes ready, serves briefly, then crashes with deterministic runtime evidence.",
+  "measures": [
+    "startup",
+    "diagnosis",
+    "recovery"
+  ],
+  "failureMode": "API exits after readiness on a timed crash and dashboard access trigger",
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "simulated crash after startup",
+    "recoveryAction": "restart api",
+    "finalState": "api stopped after runtime failure"
+  },
+  "runtime": {
+    "env": {
+      "unset": []
+    },
+    "api": {
+      "crashAfterMs": 7000,
+      "crashOnDashboardHit": true
+    },
+    "worker": {
+      "noisy": false,
+      "stuckJob": false
+    },
+    "scheduler": {
+      "tickMs": 3000
+    },
+    "postgres": {
+      "readinessDelayMs": 900,
+      "migrationFailure": false
+    },
+    "redis": {
+      "unavailable": false
+    },
+    "externalApi": {
+      "mode": "healthy"
+    }
+  }
+}

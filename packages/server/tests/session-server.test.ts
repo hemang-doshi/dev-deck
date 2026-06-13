@@ -134,6 +134,11 @@ describe("createSessionServer", () => {
 
   it("serves dashboard assets and health responses", async () => {
     const workspaceDirectory = await createWorkspace(tempDirectories);
+    await writeFile(
+      path.join(workspaceDirectory, "devdeck-mark.svg"),
+      '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
+      "utf8",
+    );
     const session = new ServiceSession({
       project: "sample",
       services: [],
@@ -146,10 +151,12 @@ describe("createSessionServer", () => {
     const { port } = await server.start();
 
     const htmlResponse = await fetch(`http://127.0.0.1:${port}/`);
+    const iconResponse = await fetch(`http://127.0.0.1:${port}/devdeck-mark.svg`);
     const healthResponse = await fetch(`http://127.0.0.1:${port}/health`);
     const exportResponse = await fetch(`http://127.0.0.1:${port}/api/export`);
 
     expect(await htmlResponse.text()).toContain("DevDeck Test Dashboard");
+    expect(iconResponse.headers.get("content-type")).toContain("image/svg+xml");
     expect((await healthResponse.json()).ok).toBe(true);
     expect(await exportResponse.text()).toContain("# DevDeck Session Export");
 

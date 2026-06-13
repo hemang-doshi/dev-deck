@@ -456,6 +456,7 @@ export async function runStopCommand(
         url: flags.url,
       },
     );
+    await waitForSessionStop(options.cwd);
     if (flags.json) {
       printJsonResponse(
         createSuccessResponse(
@@ -503,6 +504,25 @@ export async function runStopCommand(
       return false;
     }
     throw error;
+  }
+}
+
+async function waitForSessionStop(cwd: string | undefined): Promise<void> {
+  const deadline = Date.now() + 10_000;
+
+  while (Date.now() <= deadline) {
+    const inspection = await inspectSession({ cwd }).catch(() => null);
+
+    if (!inspection || inspection.state === "missing") {
+      return;
+    }
+
+    if (inspection.state === "stale" || inspection.state === "unreachable") {
+      await clearStaleSession({ cwd, inspection }).catch(() => {});
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
 

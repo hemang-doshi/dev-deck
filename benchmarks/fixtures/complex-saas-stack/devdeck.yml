@@ -1,0 +1,118 @@
+version: 2
+project: complex-saas-stack-benchmark
+services:
+  postgres:
+    command: npm run start:postgres
+    cwd: .
+    envFiles:
+      - .env.fixture
+    health:
+      type: tcp
+      host: 127.0.0.1
+      port: 15432
+    readiness:
+      type: log
+      pattern: postgres ready
+  redis:
+    command: npm run start:redis
+    cwd: .
+    envFiles:
+      - .env.fixture
+    dependsOn:
+      postgres:
+        condition: healthy
+    health:
+      type: tcp
+      host: 127.0.0.1
+      port: 16379
+    readiness:
+      type: log
+      pattern: redis ready
+  mock-external-api:
+    command: npm run start:mock-external-api
+    cwd: .
+    envFiles:
+      - .env.fixture
+    health:
+      type: http
+      url: http://127.0.0.1:4500/health
+      expectedStatus: 200
+      timeoutMs: 1000
+    readiness:
+      type: log
+      pattern: mock external api listening
+  api:
+    command: npm run start:api
+    cwd: .
+    envFiles:
+      - .env.fixture
+    requiredEnv:
+      - DATABASE_URL
+      - REDIS_URL
+      - MOCK_EXTERNAL_API_URL
+      - SESSION_SECRET
+    dependsOn:
+      postgres:
+        condition: healthy
+      redis:
+        condition: healthy
+      mock-external-api:
+        condition: healthy
+    health:
+      type: http
+      url: http://127.0.0.1:4000/health/live
+      expectedStatus: 200
+      timeoutMs: 1000
+    readiness:
+      type: log
+      pattern: api ready
+  worker:
+    command: npm run start:worker
+    cwd: .
+    envFiles:
+      - .env.fixture
+    dependsOn:
+      api:
+        condition: ready
+      redis:
+        condition: healthy
+      postgres:
+        condition: healthy
+    readiness:
+      type: log
+      pattern: worker ready
+    health:
+      type: command
+      command: node scripts/check-heartbeat.mjs worker
+  scheduler:
+    command: npm run start:scheduler
+    cwd: .
+    envFiles:
+      - .env.fixture
+    dependsOn:
+      api:
+        condition: ready
+      redis:
+        condition: healthy
+    readiness:
+      type: log
+      pattern: scheduler started
+    health:
+      type: command
+      command: node scripts/check-heartbeat.mjs scheduler
+  web:
+    command: npm run start:web
+    cwd: .
+    envFiles:
+      - .env.fixture
+    dependsOn:
+      api:
+        condition: ready
+    health:
+      type: http
+      url: http://127.0.0.1:3000/healthz
+      expectedStatus: 200
+      timeoutMs: 1000
+    readiness:
+      type: log
+      pattern: web ready

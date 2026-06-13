@@ -188,12 +188,17 @@ function createStopController(): {
   request: (source: string) => void;
 } {
   const listeners = new Set<(source: string) => void>();
+  let requestedSource: string | null = null;
 
   return {
     onStop(listener) {
       listeners.add(listener);
+      if (requestedSource) {
+        listener(requestedSource);
+      }
     },
     request(source) {
+      requestedSource = source;
       for (const listener of listeners) {
         listener(source);
       }

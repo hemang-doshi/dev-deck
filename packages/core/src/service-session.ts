@@ -275,17 +275,26 @@ export class ServiceSession {
     if (event.type === "output") {
       this.appendCanonicalEvent(serviceLogEvent(event.log));
       this.#logBuffer.append(event.log);
+      if (event.log.severity === "error" && !event.log.isStackTrace) {
+        this.updateService(event.log.service, {
+          lastError: event.log.line,
+        });
+      }
       this.emit({ type: "log", log: event.log });
       this.resolveLogReadiness(event.log);
       return;
     }
 
     if (event.type === "exit") {
+      const current = this.#services.get(event.service);
       this.updateService(event.service, {
         status: "exited",
         pid: null,
         lastExitCode: event.code,
         lastSignal: event.signal,
+        ...(event.code && event.code !== 0 && !current?.lastError
+          ? { lastError: `${event.service} exited with code ${event.code}` }
+          : {}),
       });
       return;
     }

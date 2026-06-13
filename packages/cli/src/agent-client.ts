@@ -227,7 +227,7 @@ async function readErrorMessage(response: Response): Promise<string> {
   }
 
   const text = await response.text();
-  return text || `Agent DevDeck request failed (${response.status})`;
+  return text || `DevDeck request failed (${response.status})`;
 }
 
 function getErrorMessage(error: unknown): string {

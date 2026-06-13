@@ -36,7 +36,7 @@ export function formatLogs(result: AgentLogsResponse): string {
 export function formatSnapshot(snapshot: SessionSnapshot, tail: number): string {
   const logs = snapshot.logs.slice(-tail);
   const lines = [
-    "# Agent DevDeck Snapshot",
+    "# DevDeck Snapshot",
     "",
     `Project: ${snapshot.project}`,
     `Started: ${snapshot.startedAt}`,

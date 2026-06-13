@@ -27,7 +27,11 @@ node benchmarks/scripts/run-scenario.mjs api-crash --mode devdeck-agent-full
 
 `benchmark:realism` runs scenario-based comparisons that are closer to DevDeck's actual product claim: reducing context growth during noisy or failing local development sessions. It now compares older full-state modes with compact `--agent` modes.
 
+For actual live agent task-completion evaluation, use `evals/live-agent/`. The benchmark scripts in this directory remain deterministic and fast; they are not a substitute for live-agent behavior measurement.
+
 Each scenario run writes raw transcripts, per-command tokenizer attribution, local real and approximate token counts, per-mode evaluation results, and a scenario-aware summary under `benchmarks/results/`. The realism runner adds `matrix-results.json` and `matrix-summary.md`.
+
+The newer complex-stack product-validation harness is documented in [product-validation.md](product-validation.md). It runs the `complex-saas-stack` fixture in `manual-runtime` and `devdeck-current` modes without replacing the older `node-api-worker` flows.
 
 ## Published Reports
 
@@ -64,5 +68,7 @@ Do not publish benchmark numbers without including:
 
 Committed proof artifacts belong under `benchmarks/reports/`.
 Generated local runs stay under `benchmarks/results/`.
+
+Live-agent proof artifacts belong under `evals/live-agent/reports/`.
 
 See [Interpreting Benchmark Results](../Docs/benchmarks/interpreting-results.md) before drawing conclusions from a single fixture or scenario.
