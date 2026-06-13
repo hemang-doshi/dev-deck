@@ -68,7 +68,7 @@ describe("agent commands", () => {
     expect(logs.stdout).not.toContain("boot complete");
 
     expect(snapshot.code).toBe(0);
-    expect(snapshot.stdout).toContain("# Agent DevDeck Snapshot");
+    expect(snapshot.stdout).toContain("# DevDeck Snapshot");
     expect(snapshot.stdout).toContain("worker");
     expect(snapshot.stdout).toContain("job failed");
     expect(snapshot.stdout).not.toContain("boot complete");
@@ -576,7 +576,7 @@ describe("agent commands", () => {
     const result = await runWithCapturedIo(["agent", "setup"], workspaceDirectory);
 
     expect(result.code).toBe(0);
-    expect(result.stdout).toContain("Agent DevDeck");
+    expect(result.stdout).toContain("DevDeck");
     expect(result.stdout).toContain("devdeck.yml");
     expect(result.stdout).toContain("services:");
     expect(result.stdout).toContain("Use `devdeck dev`");
