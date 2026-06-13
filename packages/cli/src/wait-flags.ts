@@ -74,3 +74,19 @@ export function resolveServiceWaitSeconds(options: {
 
   return 0;
 }
+
+export function resolveRecoverWaitSeconds(options: {
+  agent: boolean;
+  json: boolean;
+  waitFlag: OptionalWaitFlag;
+}): number {
+  if (options.waitFlag.seconds !== undefined) {
+    return options.waitFlag.seconds;
+  }
+
+  if (options.agent || options.json || options.waitFlag.specified) {
+    return DEFAULT_AGENT_WAIT_SECONDS;
+  }
+
+  return 0;
+}

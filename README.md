@@ -31,6 +31,8 @@ DevDeck reduces that noise. It gives humans and agents one runtime control plane
 
 - start everything from one config
 - inspect machine-readable state
+- diagnose degraded startup without a separate shell spelunking loop
+- recover one failed service with bounded verification
 - fetch bounded logs instead of dumping full terminal buffers
 - snapshot the current deck before escalating a debugging problem
 - restart only the service that changed
@@ -86,12 +88,14 @@ Open `http://127.0.0.1:4545` to use the local dashboard.
 When an AI coding agent is operating in a repo that uses DevDeck, the default loop is:
 
 1. Install the package if it is not already present.
-2. Run `npx devdeck start` instead of starting raw long-running processes.
-3. Use `npx devdeck status --agent` for compact diagnosis-oriented state.
-4. Use `npx devdeck logs <service> --agent --tail 80` for bounded debugging context.
-5. Run `npx devdeck snapshot --agent` before asking a human for extra diagnostics.
-6. Switch to `--json` only when full structured state is required.
-7. Stop the deck with `npx devdeck stop` when the task is complete.
+2. Run `npx devdeck start --agent --wait` instead of starting raw long-running processes.
+3. If startup is degraded, read the inline diagnosis packet before spending another command.
+4. Use `npx devdeck diagnose --agent` when you need an explicit root-cause packet.
+5. Use `npx devdeck recover --agent --wait` for bounded targeted recovery and verification.
+6. Use `npx devdeck status --agent` and `npx devdeck logs <service> --agent --tail 80` only when the next action requires them.
+7. Run `npx devdeck snapshot --agent` before asking a human for extra diagnostics.
+8. Switch to `--json` only when full structured state is required.
+9. Stop the deck with `npx devdeck stop --agent` when the task is complete.
 
 This keeps runtime coordination out of sprawling terminal transcripts and inside a stable CLI contract.
 
@@ -114,12 +118,15 @@ For humans, DevDeck is the same control plane with a simpler mental model:
 | `npx devdeck dev` | Start DevDeck in the foreground |
 | `npx devdeck start` | Start DevDeck in the background |
 | `npx devdeck status` | Inspect current service state |
+| `npx devdeck start --agent --wait` | Start the stack with bounded readiness and inline degraded diagnosis |
 | `npx devdeck status --agent` | Inspect compact agent-oriented state |
+| `npx devdeck diagnose --agent` | Produce a compact diagnosis packet with root cause and next action |
+| `npx devdeck recover --agent --wait` | Apply bounded targeted recovery with verification |
 | `npx devdeck status --json` | Inspect machine-readable service state |
 | `npx devdeck logs <service> --agent --tail 80` | Read compact evidence-oriented logs for one service |
 | `npx devdeck snapshot --agent` | Capture a compact diagnosis packet |
-| `npx devdeck service restart <name>` | Restart one service |
-| `npx devdeck stop` | Stop the full deck |
+| `npx devdeck service restart <name> --agent --wait` | Restart one service with bounded verification |
+| `npx devdeck stop --agent` | Stop the full deck |
 
 ## Example `devdeck.yml`
 
@@ -150,20 +157,22 @@ The first published report is available here:
 
 `benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md`
 
-The first published report is a historical approximate-only result. Current local harness runs use named real tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
+The first published report is a historical approximate-only result. Current deterministic harness runs use local transcript-token approximations with named tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
-DevDeck also includes an optional live-agent evaluation harness under `evals/live-agent/`. That harness compares the same scenario under raw shell and DevDeck-guided debugging, records transcript-token approximations, and records provider usage only when the runtime exposes it.
+DevDeck also includes an optional live-agent evaluation harness under `evals/live-agent/`. That harness compares the same scenario under raw shell and DevDeck-guided debugging, records transcript-token approximations, and records provider usage separately only when the runtime exposes it.
 
-## Current Status: v1.4
+## Current Status: v1.4.6
 
-DevDeck v1.4 ships the core OSS foundation:
+DevDeck v1.4.6 sharpens the bounded agent loop:
 
 - local CLI orchestration for multi-service stacks
-- agent-friendly bounded inspection commands
+- agent-friendly bounded inspection, diagnosis, and recovery commands
+- degraded `start --agent --wait` output with inline diagnosis
+- targeted `recover --agent --wait` for restartable service failures
 - structured `DD-ERR-XXXX` diagnostics
 - a local dashboard for visual monitoring and control
 
-This slice focuses on productization, onboarding, and repository trust signals rather than runtime feature changes.
+This slice focuses on collapsing diagnosis and recovery turns without adding hidden evaluator shortcuts.
 
 ## Roadmap
 

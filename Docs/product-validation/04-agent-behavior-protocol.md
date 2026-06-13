@@ -25,10 +25,10 @@ If `devdeck.yml` exists, the repository is DevDeck-managed.
 When `devdeck.yml` exists, the default runtime loop is:
 
 1. run `npx devdeck start --agent --wait`
-2. run `npx devdeck status --agent`
-3. if degraded or failed, run `npx devdeck diagnose --agent`
-4. apply the recommended bounded action, preferably `npx devdeck service restart <service> --agent --wait`
-5. re-check `npx devdeck status --agent`
+2. if startup prints inline `DIAG`, follow that bounded next action immediately
+3. otherwise run `npx devdeck diagnose --agent` only when explicit root-cause output is still needed
+4. use `npx devdeck recover --agent --wait` for restartable degraded services
+5. use `npx devdeck status --agent` or `npx devdeck logs <service> --agent --tail 80` only when the printed next action requires it
 6. stop with `npx devdeck stop --agent`
 
 This loop is the default until DevDeck proves it cannot provide the required information.
@@ -89,9 +89,9 @@ Not allowed as a default first step once the benchmark protocol is established. 
 In the DevDeck path, the agent should usually stay within this bounded runtime-management loop:
 
 - startup: `start --agent --wait`
-- inspect: `status --agent`
 - diagnose: `diagnose --agent`
-- recover: `service restart <service> --agent --wait`
+- recover: `recover --agent --wait`
+- service-control fallback: `service restart <service> --agent --wait`
 - verify: `status --agent`
 - stop: `stop --agent`
 
