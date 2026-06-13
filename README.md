@@ -1,6 +1,22 @@
-# <img src="assets/icon.png" width="48" height="48" valign="middle" /> Agent DevDeck
+<p align="center">
+  <img src="assets/devdeck-mark.svg" width="96" alt="DevDeck mark" />
+</p>
 
-> The local runtime control plane for AI coding agents.
+<h1 align="center">DevDeck</h1>
+
+<p align="center">
+  <strong>The local runtime control plane for AI coding agents.</strong>
+</p>
+
+<p align="center">
+  <a href="#install">Install</a>
+  ·
+  <a href="#60-second-quick-start">Quick Start</a>
+  ·
+  <a href="Docs/README.md">Docs</a>
+  ·
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
 Agents are great at code.
 They are terrible at babysitting terminals.
