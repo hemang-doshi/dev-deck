@@ -41,14 +41,26 @@ export function SessionHeader(props: SessionHeaderProps) {
       <CardContent className="relative flex flex-col gap-5 p-5 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-500">
-              <SquareTerminal className="size-3.5" />
-              Current session
+            <div className="flex items-center gap-3">
+              <img
+                src="/devdeck-mark.svg"
+                alt="DevDeck"
+                className="size-10 rounded-2xl shadow-[0_10px_24px_rgba(15,23,42,0.12)]"
+              />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <SquareTerminal className="size-3.5" />
+                  DevDeck
+                </div>
+                <div className="text-sm text-slate-600">
+                  Local runtime control plane for agents and developers
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold tracking-tight text-slate-950 md:text-4xl">
-                {props.project || "DevDeck"}
+                {props.project || "Untitled project"}
               </h1>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge className={cn("gap-1.5 rounded-full px-2.5", connectionBadgeClass(props.connectionState))}>

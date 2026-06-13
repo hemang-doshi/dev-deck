@@ -11,7 +11,10 @@ const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "DevDeck",
-  description: "Local-first developer session dashboard",
+  description: "The local runtime control plane for agents and developers.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
