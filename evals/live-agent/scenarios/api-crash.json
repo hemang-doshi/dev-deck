@@ -1,21 +1,19 @@
 {
   "id": "api-crash",
-  "description": "API starts successfully, then exits with a deterministic runtime error.",
-  "fixture": "node-api-worker",
-  "goal": "Identify the failed service, identify the root cause, recover the service, and verify final health.",
+  "description": "The API becomes ready, serves briefly, then crashes with deterministic runtime evidence.",
+  "fixture": "complex-saas-stack",
+  "setupScenario": "api-crash-after-start",
+  "goal": "Start the stack, observe the API crash, recover with a targeted restart, verify final health, and stop cleanly.",
   "expected": {
     "failedService": "api",
-    "rootCauseContains": "database connection lost",
-    "recoveryActionContains": "restart api",
-    "finalHealthContains": "\"ok\":true"
+    "rootCauseContains": "simulated crash after startup",
+    "recoveryActionContains": "restart",
+    "finalHealthContains": "running"
   },
-  "environment": {
-    "API_FAIL_AFTER_MS": "5000",
-    "API_FAIL_MESSAGE": "database connection lost"
-  },
+  "environment": {},
   "limits": {
-    "maxTurns": 8,
+    "maxTurns": 10,
     "maxToolCalls": 20,
-    "timeoutMs": 180000
+    "timeoutMs": 240000
   }
 }

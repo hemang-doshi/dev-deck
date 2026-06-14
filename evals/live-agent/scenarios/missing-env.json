@@ -1,0 +1,19 @@
+{
+  "id": "missing-env",
+  "description": "The API fails early because required environment values are missing.",
+  "fixture": "complex-saas-stack",
+  "setupScenario": "missing-env",
+  "goal": "Start the stack, use bounded output to identify the missing environment variable failure, clean up, and stop without unnecessary raw logs.",
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "missing required env",
+    "recoveryActionContains": "none",
+    "finalHealthContains": "degraded"
+  },
+  "environment": {},
+  "limits": {
+    "maxTurns": 8,
+    "maxToolCalls": 16,
+    "timeoutMs": 240000
+  }
+}

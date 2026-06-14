@@ -89,5 +89,7 @@ In live evaluation runs:
 
 - `transcriptTokens` are local approximations from deterministic harness tokenizers
 - `providerUsage` is recorded separately only if the agent runtime exposes it
+- aggregate report rows use pass rate and median values across repeats
+- raw transcripts remain in `evals/live-agent/results/` and publishable summaries go under `evals/live-agent/reports/`
 
 Do not treat transcript tokens as billed provider usage, and do not claim universal savings from a single scenario or fixture.

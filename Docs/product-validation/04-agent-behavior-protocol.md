@@ -107,3 +107,12 @@ This protocol should later be converted into:
 - `.devdeck/agent-protocol.md`
 
 The benchmark should evaluate whether those instruction forms meaningfully change behavior.
+
+## Evaluation layering
+
+Use two separate evaluation layers:
+
+- deterministic product-validation matrix for CLI contract regression
+- live-agent evaluation for real agent behavior under the bounded loop
+
+Live-agent reports should publish aggregate pass rate and median metrics, while raw transcripts remain in uncommitted `evals/live-agent/results/` unless explicitly safe to publish.

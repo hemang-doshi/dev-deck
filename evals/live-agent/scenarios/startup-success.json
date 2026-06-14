@@ -1,0 +1,19 @@
+{
+  "id": "startup-success",
+  "description": "Everything starts cleanly with realistic startup ordering and steady background activity.",
+  "fixture": "complex-saas-stack",
+  "setupScenario": "startup-success",
+  "goal": "Start the stack, verify that services are healthy, stop cleanly, and avoid unnecessary diagnosis or recovery steps.",
+  "expected": {
+    "failedService": null,
+    "rootCauseContains": null,
+    "recoveryActionContains": "none",
+    "finalHealthContains": "running"
+  },
+  "environment": {},
+  "limits": {
+    "maxTurns": 8,
+    "maxToolCalls": 16,
+    "timeoutMs": 240000
+  }
+}

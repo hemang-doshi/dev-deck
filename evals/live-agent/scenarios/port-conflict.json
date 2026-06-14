@@ -1,0 +1,19 @@
+{
+  "id": "port-conflict",
+  "description": "A helper process occupies the API port before startup.",
+  "fixture": "complex-saas-stack",
+  "setupScenario": "port-conflict",
+  "goal": "Start the stack, identify the API port conflict through bounded evidence, clean up, and stop without unnecessary raw logs.",
+  "expected": {
+    "failedService": "api",
+    "rootCauseContains": "EADDRINUSE",
+    "recoveryActionContains": "none",
+    "finalHealthContains": "degraded"
+  },
+  "environment": {},
+  "limits": {
+    "maxTurns": 8,
+    "maxToolCalls": 16,
+    "timeoutMs": 240000
+  }
+}
