@@ -9,6 +9,8 @@ Current harnesses:
 This is separate from `benchmarks/`:
 
 - `benchmarks/` measures deterministic scripted workflows and output/token regressions.
-- `evals/live-agent/` measures live agent behavior, deterministic scoring, transcript token approximations, and provider usage when the agent runtime exposes it.
+- `evals/live-agent/` measures live agent behavior, deterministic scoring, transcript token approximations, repeat-aware medians and pass rates, and provider usage when the agent runtime exposes it.
 
 Live Codex execution is optional. If Codex CLI auth or non-interactive execution is unavailable, the harness records an explicit skip instead of inventing results.
+
+The deterministic matrix is the CLI contract regression layer. The live-agent harness is the real behavior layer.

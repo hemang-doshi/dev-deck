@@ -159,9 +159,20 @@ The first published report is available here:
 
 The first published report is a historical approximate-only result. Current deterministic harness runs use local transcript-token approximations with named tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
-DevDeck also includes an optional live-agent evaluation harness under `evals/live-agent/`. That harness compares the same scenario under raw shell and DevDeck-guided debugging, records transcript-token approximations, and records provider usage separately only when the runtime exposes it.
+DevDeck also includes an optional live-agent evaluation harness under `evals/live-agent/`. That harness compares the same scenario under raw shell and DevDeck-guided debugging, records transcript-token approximations, aggregates pass rate and median repeat metrics, and records provider usage separately only when the runtime exposes it.
 
-## Current Status: v1.4.6
+## Current Status: v1.4.7
+
+DevDeck v1.4.7 upgrades the live-agent evaluation layer around the bounded runtime loop:
+
+- DevDeck-agent prompt centered on `start --agent --wait 30`, inline diagnosis reuse, and `recover --agent --wait 30`
+- live scenario coverage aligned with the five-scenario product-validation matrix
+- repeat-aware median and pass-rate reporting for live runs
+- scorer support for bounded recovery via `devdeck recover`
+
+This slice upgrades measurement, not the runtime command surface.
+
+## Previous Runtime Slice: v1.4.6
 
 DevDeck v1.4.6 sharpens the bounded agent loop:
 
@@ -172,7 +183,7 @@ DevDeck v1.4.6 sharpens the bounded agent loop:
 - structured `DD-ERR-XXXX` diagnostics
 - a local dashboard for visual monitoring and control
 
-This slice focuses on collapsing diagnosis and recovery turns without adding hidden evaluator shortcuts.
+That slice focused on collapsing diagnosis and recovery turns without adding hidden evaluator shortcuts.
 
 ## Roadmap
 

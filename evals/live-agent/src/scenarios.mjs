@@ -7,6 +7,13 @@ const scenariosDir = path.resolve(__dirname, "../scenarios");
 const promptsDir = path.resolve(__dirname, "../prompts");
 
 export const supportedVariants = ["baseline-shell", "devdeck-agent"];
+export const supportedScenarioIds = [
+  "startup-success",
+  "missing-env",
+  "port-conflict",
+  "api-crash",
+  "noisy-worker",
+];
 
 export async function loadScenario(id) {
   const source = await readFile(path.join(scenariosDir, `${id}.json`), "utf8");
@@ -14,7 +21,7 @@ export async function loadScenario(id) {
 }
 
 export async function listScenarios() {
-  return await Promise.all(["api-crash", "noisy-worker"].map(loadScenario));
+  return await Promise.all(supportedScenarioIds.map(loadScenario));
 }
 
 export async function loadPrompt(variant) {
@@ -49,6 +56,7 @@ Constraints:
 - Keep commands bounded and deterministic.
 - Treat the fixture as immutable. Do not edit source files or configuration files.
 - Recovery must use runtime or service-management actions rather than code changes.
+- Prefer final verification that proves the stack state, not a vague summary.
 - Finish with the requested concise final answer fields only.
 `;
 }
