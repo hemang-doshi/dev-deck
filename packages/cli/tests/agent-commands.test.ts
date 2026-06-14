@@ -283,6 +283,58 @@ describe("agent commands", () => {
     expect(noWait.stdout).toContain("START ok project=sample");
   });
 
+  it("inlines diagnosis into degraded start --agent output", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    await writeFile(path.join(workspaceDirectory, "devdeck.yml"), "project: sample\nservices: {}\n", "utf8");
+    const failingSnapshot = {
+      ...createSnapshot(),
+      services: [
+        {
+          ...createSnapshot().services[0],
+          health: "unknown",
+          readiness: "failed",
+          status: "error",
+          pid: null,
+          lastError: "missing required env DATABASE_URL",
+        },
+      ],
+      logs: [
+        {
+          ...createSnapshot().logs[1],
+          service: "api",
+          severity: "error",
+          line: "missing required env DATABASE_URL",
+        },
+      ],
+    };
+    const fixture = await createFixtureServer({
+      snapshotFactory: () => failingSnapshot,
+    });
+    servers.push(fixture);
+
+    spawnMock.mockImplementationOnce(() => {
+      setTimeout(() => {
+        void writeSessionFile(workspaceDirectory, {
+          pid: process.pid,
+          url: fixture.url,
+        });
+      }, 10);
+      return { unref: vi.fn() };
+    });
+
+    const result = await runWithCapturedIo(["start", "--agent", "--wait"], workspaceDirectory);
+
+    expect(result.code).toBe(1);
+    expect(result.stdout).toContain("START degraded project=sample services=1 running=0 degraded=1");
+    expect(result.stdout).toContain("DIAG degraded root=missing_env svc=api conf=0.95");
+    expect(result.stdout).toContain("CAUSE api missing required environment variable DATABASE_URL");
+    expect(result.stdout).toContain('E ERROR api "missing required env DATABASE_URL"');
+    expect(result.stdout).toContain("NEXT devdeck stop --agent # cleanup failed startup");
+    expect(result.stdout).not.toContain("NEXT devdeck diagnose --agent");
+    expect(result.stdout).not.toContain("STATE degraded");
+  });
+
   it("prints clean JSONL events from the active session", async () => {
     const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
     tempDirectories.push(workspaceDirectory);
@@ -480,6 +532,340 @@ describe("agent commands", () => {
       error: {
         code: "DD_CLI_USAGE_INVALID",
         message: "Invalid --wait value. Expected an integer from 0 to 300 seconds.",
+      },
+    });
+  });
+
+  it("recovers service crashes with a targeted restart", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    let restarted = false;
+    const failingSnapshot = {
+      ...createSnapshot(),
+      services: [
+        {
+          ...createSnapshot().services[0],
+          health: "unknown",
+          readiness: "failed",
+          status: "exited",
+          pid: null,
+          restartCount: 1,
+          lastExitCode: 1,
+          lastError: "simulated crash after startup",
+        },
+        {
+          ...createSnapshot().services[1],
+          status: "running",
+          readiness: "ready",
+          health: "healthy",
+          pid: 222,
+          restartCount: 0,
+          lastExitCode: null,
+          lastError: null,
+        },
+      ],
+      logs: [
+        {
+          ...createSnapshot().logs[0],
+        },
+        {
+          ...createSnapshot().logs[1],
+          service: "api",
+          severity: "error",
+          line: "simulated crash after startup",
+        },
+      ],
+    };
+    const healthySnapshot = {
+      ...createSnapshot(),
+      services: [
+        {
+          ...createSnapshot().services[0],
+          restartCount: 1,
+        },
+        {
+          ...createSnapshot().services[1],
+          status: "running",
+          readiness: "ready",
+          health: "healthy",
+          pid: 222,
+          restartCount: 1,
+          lastExitCode: null,
+          lastError: null,
+        },
+      ],
+      logs: [],
+    };
+    const fixture = await createFixtureServer({
+      snapshotFactory: () => (restarted ? healthySnapshot : failingSnapshot),
+      onAction: (action) => {
+        if (action.action === "restart" && action.serviceName === "api") {
+          restarted = true;
+        }
+      },
+    });
+    servers.push(fixture);
+
+    const result = await runWithCapturedIo(
+      ["recover", "--agent", "--wait", "1", "--url", fixture.url],
+      workspaceDirectory,
+    );
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("RECOVER ok root=service_crash svc=api action=restart");
+    expect(result.stdout).toContain("CAUSE api exited after startup with non-zero code");
+    expect(result.stdout).toContain("S api running ready=ready h=healthy r=1 issue=none");
+    expect(result.stdout).toContain("NEXT none # recovered");
+    expect(fixture.actions).toContainEqual({ action: "restart", serviceName: "api" });
+  });
+
+  it("skips non-recoverable missing env and port conflict diagnoses", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const missingEnvFixture = await createFixtureServer({
+      snapshotFactory: () => ({
+        ...createSnapshot(),
+        services: [
+          {
+            ...createSnapshot().services[0],
+            health: "unknown",
+            readiness: "failed",
+            status: "error",
+            pid: null,
+            lastError: "missing required env DATABASE_URL",
+          },
+        ],
+        logs: [
+          {
+            ...createSnapshot().logs[1],
+            service: "api",
+            severity: "error",
+            line: "missing required env DATABASE_URL",
+          },
+        ],
+      }),
+    });
+    servers.push(missingEnvFixture);
+
+    const portConflictFixture = await createFixtureServer({
+      snapshotFactory: () => ({
+        ...createSnapshot(),
+        services: [
+          {
+            ...createSnapshot().services[0],
+            health: "unknown",
+            readiness: "failed",
+            status: "error",
+            pid: null,
+            lastError: "EADDRINUSE: address already in use :::4000",
+          },
+        ],
+        logs: [
+          {
+            ...createSnapshot().logs[1],
+            service: "api",
+            severity: "error",
+            line: "EADDRINUSE: address already in use :::4000",
+          },
+        ],
+      }),
+    });
+    servers.push(portConflictFixture);
+
+    const missingEnv = await runWithCapturedIo(
+      ["recover", "--agent", "--url", missingEnvFixture.url],
+      workspaceDirectory,
+    );
+    const portConflict = await runWithCapturedIo(
+      ["recover", "--agent", "--url", portConflictFixture.url],
+      workspaceDirectory,
+    );
+
+    expect(missingEnv.code).toBe(4);
+    expect(missingEnv.stdout).toContain("RECOVER skipped root=missing_env svc=api action=none");
+    expect(missingEnv.stdout).toContain("NEXT devdeck stop --agent # cleanup failed startup");
+    expect(missingEnvFixture.actions).toEqual([]);
+
+    expect(portConflict.code).toBe(4);
+    expect(portConflict.stdout).toContain("RECOVER skipped root=port_conflict svc=api action=none");
+    expect(portConflict.stdout).toContain("NEXT devdeck stop --agent # cleanup partial stack");
+    expect(portConflictFixture.actions).toEqual([]);
+  });
+
+  it("skips warning-only recoveries without restarting services", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const warningFixture = await createFixtureServer({
+      snapshotFactory: () => ({
+        ...createSnapshot(),
+        services: [
+          {
+            ...createSnapshot().services[0],
+          },
+          {
+            ...createSnapshot().services[1],
+            status: "running",
+            readiness: "ready",
+            health: "healthy",
+            pid: 222,
+            restartCount: 0,
+            lastExitCode: null,
+            lastError: null,
+          },
+        ],
+        logs: [
+          {
+            ...createSnapshot().logs[0],
+          },
+          {
+            ...createSnapshot().logs[1],
+            service: "worker",
+            severity: "warning",
+            line: "WARNING queue latency above threshold",
+          },
+        ],
+      }),
+    });
+    servers.push(warningFixture);
+
+    const result = await runWithCapturedIo(
+      ["recover", "--agent", "--url", warningFixture.url],
+      workspaceDirectory,
+    );
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("RECOVER ok root=warning_logs svc=worker action=none");
+    expect(result.stdout).toContain("NEXT devdeck logs worker --agent --severity warning --tail 40 # inspect bounded warning evidence");
+    expect(warningFixture.actions).toEqual([]);
+  });
+
+  async function createRecoverableCrashFixture() {
+    let restarted = false;
+    const fixture = await createFixtureServer({
+      snapshotFactory: () => (restarted
+        ? {
+          ...createSnapshot(),
+          services: [
+            {
+              ...createSnapshot().services[0],
+              restartCount: 1,
+            },
+            {
+              ...createSnapshot().services[1],
+              status: "running",
+              readiness: "ready",
+              health: "healthy",
+              pid: 222,
+              restartCount: 1,
+              lastExitCode: null,
+              lastError: null,
+            },
+          ],
+          logs: [],
+        }
+        : {
+          ...createSnapshot(),
+          services: [
+            {
+              ...createSnapshot().services[0],
+              health: "unknown",
+              readiness: "failed",
+              status: "exited",
+              pid: null,
+              restartCount: 1,
+              lastExitCode: 1,
+              lastError: "simulated crash after startup",
+            },
+            {
+              ...createSnapshot().services[1],
+              status: "running",
+              readiness: "ready",
+              health: "healthy",
+              pid: 222,
+              restartCount: 0,
+              lastExitCode: null,
+              lastError: null,
+            },
+          ],
+          logs: [
+            {
+              ...createSnapshot().logs[0],
+            },
+            {
+              ...createSnapshot().logs[1],
+              service: "api",
+              severity: "error",
+              line: "simulated crash after startup",
+            },
+          ],
+        }),
+      onAction: (action) => {
+        if (action.action === "restart" && action.serviceName === "api") {
+          setTimeout(() => {
+            restarted = true;
+          }, 50);
+        }
+      },
+    });
+    servers.push(fixture);
+    return fixture;
+  }
+
+  it("supports recover --agent with default wait", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createRecoverableCrashFixture();
+
+    const result = await runWithCapturedIo(["recover", "--agent", "--url", fixture.url], workspaceDirectory);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("RECOVER ok root=service_crash svc=api action=restart");
+  });
+
+  it("supports recover --agent --wait without an explicit value", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createRecoverableCrashFixture();
+
+    const result = await runWithCapturedIo(["recover", "--agent", "--wait", "--url", fixture.url], workspaceDirectory);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("RECOVER ok root=service_crash svc=api action=restart");
+  });
+
+  it("supports recover --json with verification output", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+    const fixture = await createRecoverableCrashFixture();
+
+    const result = await runWithCapturedIo(["recover", "--json", "--url", fixture.url], workspaceDirectory);
+
+    expect(result.code).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      schemaVersion: "devdeck.response.v1",
+      ok: true,
+      command: "recover",
+      result: {
+        action: "restart",
+        status: "ok",
+      },
+    });
+  });
+
+  it("rejects recover --json with --agent", async () => {
+    const workspaceDirectory = await mkdtemp(path.join(os.tmpdir(), "devdeck-agent-cli-"));
+    tempDirectories.push(workspaceDirectory);
+
+    const result = await runWithCapturedIo(["recover", "--json", "--agent"], workspaceDirectory);
+
+    expect(result.code).toBe(2);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      ok: false,
+      command: "recover",
+      error: {
+        code: "DD_CLI_USAGE_INVALID",
+        message: "Cannot combine --json and --agent.",
       },
     });
   });

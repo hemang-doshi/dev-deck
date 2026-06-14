@@ -4,14 +4,22 @@ import { getEvents, getLogs, getSnapshot, postAction, streamEvents, type AgentCl
 import { createDevDeckErrorPayload, type DevDeckErrorPayload } from "../agent-errors.js";
 import { createErrorResponse, createSuccessResponse, printJsonResponse } from "../agent-response.js";
 import { CliUsageError } from "../cli-errors.js";
-import { diagnoseSnapshot } from "../agent-output/diagnosis.js";
+import { diagnoseSnapshot, type AgentDiagnosis } from "../agent-output/diagnosis.js";
 import { formatAgentDiagnosis, formatAgentLogs, formatAgentSnapshot, formatAgentStatus, formatLogs, formatSnapshot, formatStatus } from "../format-agent-output.js";
 import { clearStaleSession, inspectSession, type SessionInspection } from "../session-inspector.js";
-import { parseOptionalWaitFlag, resolveServiceWaitSeconds } from "../wait-flags.js";
+import { parseOptionalWaitFlag, resolveRecoverWaitSeconds, resolveServiceWaitSeconds } from "../wait-flags.js";
 import type { CommandIo } from "./init.js";
 
 export type SessionCommandOptions = AgentClientOptions & {
   io?: CommandIo;
+};
+
+type RecoverResult = {
+  status: "ok" | "degraded" | "skipped";
+  action: "restart" | "none";
+  diagnosis: AgentDiagnosis;
+  snapshot: SessionSnapshot | null;
+  elapsedMs: number;
 };
 
 export async function runStatusCommand(
@@ -494,6 +502,114 @@ export async function runDiagnoseCommand(
   }
 }
 
+export async function runRecoverCommand(
+  args: string[],
+  options: SessionCommandOptions = {},
+): Promise<boolean> {
+  const flags = parseRecoverFlags(args);
+
+  try {
+    const snapshot = await getSnapshot({
+      cwd: options.cwd,
+      fetchImplementation: options.fetchImplementation,
+      url: flags.url,
+    });
+    const diagnosis = diagnoseSnapshot(snapshot);
+    const startedAt = Date.now();
+
+    if (!isAutoRecoverableDiagnosis(diagnosis)) {
+      const ok = diagnosis.state !== "degraded";
+      const result: RecoverResult = {
+        status: ok ? "ok" : "skipped",
+        action: "none" as const,
+        diagnosis,
+        snapshot: null,
+        elapsedMs: Date.now() - startedAt,
+      };
+
+      if (flags.json) {
+        writeRecoverJson({
+          options,
+          snapshot,
+          result,
+        });
+      } else {
+        writeOutput(options.io, formatRecoverResult(result));
+      }
+      return ok;
+    }
+
+    await postAction(
+      { action: "restart", serviceName: diagnosis.service },
+      {
+        cwd: options.cwd,
+        fetchImplementation: options.fetchImplementation,
+        url: flags.url,
+      },
+    );
+
+    const waitSeconds = resolveRecoverWaitSeconds({
+      agent: flags.agent,
+      json: flags.json,
+      waitFlag: flags.waitFlag,
+    });
+    const waited = waitSeconds > 0
+      ? await waitForRecoveryResult({
+        cwd: options.cwd,
+        fetchImplementation: options.fetchImplementation,
+        url: flags.url,
+        serviceName: diagnosis.service,
+        waitSeconds,
+      })
+      : null;
+
+    const verificationSnapshot = waited?.snapshot ?? await getSnapshot({
+      cwd: options.cwd,
+      fetchImplementation: options.fetchImplementation,
+      url: flags.url,
+    }).catch(() => null);
+    const ok = verificationSnapshot
+      ? hasRecoveredService(verificationSnapshot, diagnosis.service)
+      : false;
+
+    const result: RecoverResult = {
+      status: ok ? "ok" : "degraded",
+      action: "restart" as const,
+      diagnosis,
+      snapshot: verificationSnapshot,
+      elapsedMs: Date.now() - startedAt,
+    };
+
+    if (flags.json) {
+      writeRecoverJson({
+        options,
+        snapshot,
+        result,
+      });
+    } else {
+      writeOutput(options.io, formatRecoverResult(result));
+    }
+
+    return ok;
+  } catch (error) {
+    if (!flags.json) {
+      throw error;
+    }
+
+    printJsonResponse(
+      createErrorResponse(
+        {
+          command: "recover",
+          summary: "Unable to recover the current DevDeck session.",
+        },
+        toAgentErrorPayload(error, "recover"),
+      ),
+      getWriter(options.io),
+    );
+    return false;
+  }
+}
+
 export async function runStopCommand(
   args: string[],
   options: SessionCommandOptions = {},
@@ -882,6 +998,15 @@ function parseServiceFlags(args: string[]): {
   return { json, agent, url, waitFlag };
 }
 
+function parseRecoverFlags(args: string[]): {
+  json: boolean;
+  agent: boolean;
+  url?: string;
+  waitFlag: { specified: boolean; seconds?: number };
+} {
+  return parseServiceFlags(args);
+}
+
 function parseOptionalTail(args: string[]): number {
   for (let index = 0; index < args.length; index += 1) {
     if (args[index] === "--tail") {
@@ -1140,6 +1265,45 @@ async function waitForServiceActionResult(options: {
   };
 }
 
+async function waitForRecoveryResult(options: {
+  cwd: string | undefined;
+  fetchImplementation?: typeof fetch;
+  url?: string;
+  serviceName: string;
+  waitSeconds: number;
+}): Promise<{
+  ok: boolean;
+  snapshot: SessionSnapshot | null;
+}> {
+  const deadline = Date.now() + options.waitSeconds * 1000;
+  let latestSnapshot: SessionSnapshot | null = null;
+
+  while (Date.now() <= deadline) {
+    const snapshot = await getSnapshot({
+      cwd: options.cwd,
+      fetchImplementation: options.fetchImplementation,
+      url: options.url,
+    }).catch(() => null);
+
+    if (snapshot) {
+      latestSnapshot = snapshot;
+      if (hasRecoveredService(snapshot, options.serviceName)) {
+        return {
+          ok: true,
+          snapshot,
+        };
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  return {
+    ok: false,
+    snapshot: latestSnapshot,
+  };
+}
+
 function serviceReachedTargetState(
   service: SessionSnapshot["services"][number],
   action: "start" | "stop" | "restart",
@@ -1209,6 +1373,114 @@ function formatAgentServiceActionResult(options: {
   }
 
   return `${lines.join("\n")}\n`;
+}
+
+function isAutoRecoverableDiagnosis(
+  diagnosis: AgentDiagnosis,
+): diagnosis is AgentDiagnosis & { service: string; root: "service_crash" | "health_unreachable" } {
+  return diagnosis.state === "degraded" &&
+    (diagnosis.root === "service_crash" || diagnosis.root === "health_unreachable") &&
+    typeof diagnosis.service === "string" &&
+    diagnosis.service.length > 0;
+}
+
+function hasRecoveredService(snapshot: SessionSnapshot, serviceName: string): boolean {
+  const service = snapshot.services.find((entry) => entry.name === serviceName);
+  if (!service) {
+    return false;
+  }
+
+  return serviceIsHealthyEnough(service, "restart");
+}
+
+function formatRecoverResult(result: RecoverResult): string {
+  const elapsed = `${(result.elapsedMs / 1000).toFixed(1)}s`;
+  const serviceName = result.diagnosis.service ?? "-";
+  const lines = [
+    `RECOVER ${result.status} root=${result.diagnosis.root} svc=${serviceName} action=${result.action} elapsed=${elapsed}`,
+    `CAUSE ${result.diagnosis.cause}`,
+  ];
+
+  const service = result.snapshot?.services.find((entry) => entry.name === result.diagnosis.service);
+  if (service) {
+    lines.push(
+      `S ${service.name} ${service.status} ready=${service.readiness} h=${service.health} r=${service.restartCount} issue=${deriveServiceIssue(service)}${service.lastError ? ` msg=${JSON.stringify(service.lastError)}` : ""}`,
+    );
+  }
+
+  if (result.status === "ok") {
+    lines.push(result.action === "none"
+      ? `NEXT ${result.diagnosis.nextAction.command} # ${result.diagnosis.nextAction.reason}`
+      : "NEXT none # recovered");
+  } else if (result.status === "skipped") {
+    lines.push(`NEXT ${result.diagnosis.nextAction.command} # ${result.diagnosis.nextAction.reason}`);
+    } else {
+      lines.push("NEXT devdeck diagnose --agent # inspect failed recovery");
+  }
+
+  return `${lines.join("\n")}\n`;
+}
+
+function writeRecoverJson(options: {
+    options: SessionCommandOptions;
+    snapshot: SessionSnapshot;
+    result: RecoverResult;
+  }): void {
+  const writer = getWriter(options.options.io);
+  const ok = options.result.status === "ok";
+  const response = {
+    action: options.result.action,
+    diagnosis: options.result.diagnosis,
+    elapsedMs: options.result.elapsedMs,
+    snapshot: options.result.snapshot,
+    status: options.result.status,
+  };
+
+  if (ok) {
+    printJsonResponse(
+      createSuccessResponse(
+        {
+          command: "recover",
+          project: options.snapshot.project,
+          summary: options.result.action === "none"
+            ? options.result.diagnosis.cause
+            : `Recovered ${options.result.diagnosis.service}.`,
+        },
+        response,
+      ),
+      writer,
+    );
+    return;
+  }
+
+  printJsonResponse(
+    createErrorResponse(
+      {
+        command: "recover",
+        project: options.snapshot.project,
+        summary: options.result.diagnosis.cause,
+      },
+      createDevDeckErrorPayload({
+        code: options.result.action === "none" ? "DD_RECOVERY_SKIPPED" : "DD_RECOVERY_FAILED",
+        message: options.result.diagnosis.cause,
+        severity: "error",
+        retryable: options.result.action === "restart",
+        evidence: [],
+        nextActions: [
+          {
+            type: "command",
+            command: options.result.status === "skipped"
+              ? options.result.diagnosis.nextAction.command
+              : "devdeck diagnose --agent",
+            reason: options.result.status === "skipped"
+              ? options.result.diagnosis.nextAction.reason
+              : "inspect failed recovery",
+          },
+        ],
+      }),
+    ),
+    writer,
+  );
 }
 
 function deriveServiceIssue(service: SessionSnapshot["services"][number]): string {

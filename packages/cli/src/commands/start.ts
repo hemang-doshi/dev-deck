@@ -482,15 +482,30 @@ function formatAgentStartResult(options: {
     return `${header}\n${formatAgentStatus(options.snapshot)}`;
   }
 
-  const diagnosis = diagnoseSnapshot(options.snapshot);
+  if (options.kind === "degraded") {
+    return `${header}\n${formatInlineAgentDiagnosis(options.snapshot)}`;
+  }
+
   const statusLines = formatAgentStatus(options.snapshot)
     .trimEnd()
     .split("\n")
     .filter((line) => !line.startsWith("NEXT "));
-  statusLines.push("NEXT devdeck diagnose --agent # identify root cause and recovery action");
+  statusLines.push("NEXT devdeck diagnose --agent # inspect unresolved startup state");
   return `${header}\n${statusLines.join("\n")}\n`;
 }
 
 function writeOutput(io: CommandIo, message: string): void {
   io.stdout(message);
+}
+
+function formatInlineAgentDiagnosis(snapshot: SessionSnapshot): string {
+  const diagnosis = diagnoseSnapshot(snapshot);
+  const lines = [
+    `DIAG ${diagnosis.state} root=${diagnosis.root} svc=${diagnosis.service ?? "-"} conf=${diagnosis.confidence.toFixed(2)}`,
+    `CAUSE ${diagnosis.cause}`,
+    ...diagnosis.evidence.slice(0, 3).map((evidence) =>
+      `E ${evidence.severity.toUpperCase()} ${evidence.service ?? "-"} ${JSON.stringify(evidence.line)}`),
+    `NEXT ${diagnosis.nextAction.command} # ${diagnosis.nextAction.reason}`,
+  ];
+  return `${lines.join("\n")}\n`;
 }
