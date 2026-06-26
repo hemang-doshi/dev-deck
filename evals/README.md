@@ -14,3 +14,8 @@ This is separate from `benchmarks/`:
 Live Codex execution is optional. If Codex CLI auth or non-interactive execution is unavailable, the harness records an explicit skip instead of inventing results.
 
 The deterministic matrix is the CLI contract regression layer. The live-agent harness is the real behavior layer.
+
+Published live-agent proof artifacts:
+
+- [2026-06-12 Codex live-agent v1](live-agent/reports/2026-06-12-codex-live-agent-v1/summary.md)
+- [2026-06-26 Codex live-agent v2](live-agent/reports/2026-06-26-codex-live-agent-v2/summary.md)

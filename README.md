@@ -155,11 +155,18 @@ DevDeck includes a reproducible benchmark harness under `benchmarks/`.
 
 The first published report is available here:
 
-`benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md`
+[benchmark report](benchmarks/reports/v1.3.0-node-api-worker-v0/summary.md)
 
 The first published report is a historical approximate-only result. Current deterministic harness runs use local transcript-token approximations with named tokenizers and scripted scenario evaluation. Results remain fixture-specific, and we do not claim universal savings.
 
 DevDeck also includes an optional live-agent evaluation harness under `evals/live-agent/`. That harness compares the same scenario under raw shell and DevDeck-guided debugging, records transcript-token approximations, aggregates pass rate and median repeat metrics, and records provider usage separately only when the runtime exposes it.
+
+Published live-agent proof artifacts:
+
+- [2026-06-12 Codex live-agent v1](evals/live-agent/reports/2026-06-12-codex-live-agent-v1/summary.md)
+- [2026-06-26 Codex live-agent v2](evals/live-agent/reports/2026-06-26-codex-live-agent-v2/summary.md)
+
+The current live v2 proof is intentionally not a marketing-only artifact. It captures real Codex behavior on `main` at commit `d662ac478467dbb4a36f1a275700b40a5a4abffd`, including sandbox friction where the DevDeck agent endpoint could not always become reachable. That is still useful proof: it shows what the real agent/runtime loop does today, not what a scripted evaluator assumes it should do.
 
 ## Current Status: v1.4.7
 

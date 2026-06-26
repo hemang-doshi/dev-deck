@@ -1,0 +1,1617 @@
+{
+  "environment": {
+    "date": "2026-06-26T10:55:30.992Z",
+    "gitSha": "d662ac478467dbb4a36f1a275700b40a5a4abffd",
+    "agent": "codex",
+    "codexCli": "codex (codex-cli 0.125.0)",
+    "primaryTokenizer": "tiktoken-o200k_base",
+    "repeats": 1,
+    "environment": {
+      "os": "darwin 25.5.0",
+      "node": "v26.0.0",
+      "date": "2026-06-26T10:55:30.992Z"
+    }
+  },
+  "skipped": null,
+  "results": [
+    {
+      "id": "startup-success",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "startup-success",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T10:55:33.206Z",
+                "endedAt": "2026-06-26T10:58:45.155Z",
+                "durationMs": 191949,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 13422,
+                  "characters": 46822
+                },
+                "toolCalls": 14,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "- failed service: `postgres`, `redis`, `mock-external-api`, `web`; dependents `api`, `worker`, `scheduler` could not become healthy\n- root cause: local socket operations are blocked by the execution sandbox: `listen/connect EPERM` on `127.0.0.1` ports\n- recovery action taken: ran `npm run cleanup`; all fixture PIDs were already exited and cleanup completed\n- final health result: not running; `npm run health` failed at `127.0.0.1:15432` with `EPERM` before the stack could become healthy",
+                "providerUsage": {
+                  "inputTokens": 483543,
+                  "outputTokens": 4952,
+                  "totalTokens": 489862,
+                  "reasoningOutputTokens": 1367,
+                  "cachedInputTokens": 420224
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "startup-success",
+                "variant": "baseline-shell",
+                "passed": true,
+                "checks": {
+                  "noFailureClaim": true,
+                  "finalHealthVerified": true,
+                  "noUnnecessaryDiagnosis": true,
+                  "cleanStop": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ]
+        },
+        {
+          "variant": "devdeck-agent",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "startup-success",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T10:58:46.458Z",
+                "endedAt": "2026-06-26T11:00:01.326Z",
+                "durationMs": 74868,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 3766,
+                  "characters": 13648
+                },
+                "toolCalls": 5,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: DevDeck session server\n\nroot cause: DevDeck background process failed to become reachable at `http://127.0.0.1:4545` within 30s\n\nrecovery action taken: `devdeck recover --agent --wait 30` attempted; session server was unreachable\n\nfinal health result: stopped; no services running because DevDeck session did not start successfully",
+                "providerUsage": {
+                  "inputTokens": 155921,
+                  "outputTokens": 881,
+                  "totalTokens": 156845,
+                  "reasoningOutputTokens": 43,
+                  "cachedInputTokens": 133760
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "startup-success",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "noFailureClaim": true,
+                  "finalHealthVerified": true,
+                  "noUnnecessaryDiagnosis": false,
+                  "cleanStop": true
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 0,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": false,
+                  "timeToDiagnosis": 11837,
+                  "timeToRecovery": 12284
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "missing-env",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "missing-env",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:00:02.612Z",
+                "endedAt": "2026-06-26T11:04:02.630Z",
+                "durationMs": 240018,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 474,
+                  "characters": 1760
+                },
+                "toolCalls": 0,
+                "turns": 0,
+                "exitCode": 0,
+                "finalAnswer": "",
+                "providerUsage": null,
+                "providerUsageReason": "Codex CLI did not expose provider token usage.",
+                "error": null
+              },
+              "score": {
+                "scenario": "missing-env",
+                "variant": "baseline-shell",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": false,
+                  "rootCauseIdentified": false,
+                  "boundedDiagnosisUsed": true,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": false
+                },
+                "passedChecks": 2,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 0,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": false,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ]
+        },
+        {
+          "variant": "devdeck-agent",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "missing-env",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:04:03.859Z",
+                "endedAt": "2026-06-26T11:05:41.440Z",
+                "durationMs": 97581,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 21122,
+                  "characters": 67981
+                },
+                "toolCalls": 8,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: api\n\nroot cause: missing required env vars `DATABASE_URL` and `SESSION_SECRET`\n\nrecovery action taken: `devdeck recover --agent --wait 30` attempted, but DevDeck session server was unreachable; `devdeck stop --agent` reported session already stopped\n\nfinal health result: degraded; API exited due missing env, stack stopped cleanly",
+                "providerUsage": {
+                  "inputTokens": 255203,
+                  "outputTokens": 2081,
+                  "totalTokens": 257976,
+                  "reasoningOutputTokens": 692,
+                  "cachedInputTokens": 192256
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "missing-env",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": true,
+                  "rootCauseIdentified": true,
+                  "boundedDiagnosisUsed": false,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 15421,
+                  "timeToRecovery": 15888
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "port-conflict",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "port-conflict",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:05:42.804Z",
+                "endedAt": "2026-06-26T11:07:23.831Z",
+                "durationMs": 101027,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 10607,
+                  "characters": 35494
+                },
+                "toolCalls": 7,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: api\n\nroot cause: API port `4000` was already occupied by helper Node process `pid 25956`; release was blocked by `kill EPERM`. Additional sandbox signal: local binds/probes failed with `listen/connect EPERM`.\n\nrecovery action taken: attempted `node scripts/release-port.mjs`; stopped manually started service processes. Port helper remained running due `EPERM`.\n\nfinal health result: not recovered; health check could not complete and failed with `connect EPERM 127.0.0.1:15432`, while `127.0.0.1:4000` remained occupied.",
+                "providerUsage": {
+                  "inputTokens": 258620,
+                  "outputTokens": 3380,
+                  "totalTokens": 262965,
+                  "reasoningOutputTokens": 965,
+                  "cachedInputTokens": 203008
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "port-conflict",
+                "variant": "baseline-shell",
+                "passed": true,
+                "checks": {
+                  "failedServiceIdentified": true,
+                  "rootCauseIdentified": true,
+                  "boundedDiagnosisUsed": true,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": true
+                },
+                "passedChecks": 5,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ]
+        },
+        {
+          "variant": "devdeck-agent",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "port-conflict",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:07:25.163Z",
+                "endedAt": "2026-06-26T11:09:59.237Z",
+                "durationMs": 154074,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 52006,
+                  "characters": 176472
+                },
+                "toolCalls": 10,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: api\n\nroot cause: API port conflict, `127.0.0.1:4000` already in use (`EADDRINUSE`)\n\nrecovery action taken: `devdeck recover --agent --wait 30` attempted; DevDeck agent endpoint was unreachable\n\nfinal health result: degraded; stack stopped cleanly with `devdeck stop --agent`",
+                "providerUsage": {
+                  "inputTokens": 362484,
+                  "outputTokens": 2455,
+                  "totalTokens": 365744,
+                  "reasoningOutputTokens": 805,
+                  "cachedInputTokens": 297856
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "port-conflict",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": true,
+                  "rootCauseIdentified": true,
+                  "boundedDiagnosisUsed": false,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 17979,
+                  "timeToRecovery": 167791
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "api-crash",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "api-crash",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:10:00.371Z",
+                "endedAt": "2026-06-26T11:12:01.834Z",
+                "durationMs": 121463,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 12917,
+                  "characters": 47586
+                },
+                "toolCalls": 15,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: all socket-bound services failed to start\n\nroot cause: sandbox denied localhost socket bind/connect (`listen EPERM`, `connect EPERM`), so the intended API ready-then-crash scenario could not be observed\n\nrecovery action taken: ran `node scripts/cleanup.mjs`; all recorded service PIDs were already exited and PID files were cleared\n\nfinal health result: not running; stack stopped cleanly after cleanup",
+                "providerUsage": {
+                  "inputTokens": 305680,
+                  "outputTokens": 3916,
+                  "totalTokens": 310691,
+                  "reasoningOutputTokens": 1095,
+                  "cachedInputTokens": 242304
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "api-crash",
+                "variant": "baseline-shell",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": false,
+                  "rootCauseIdentified": true,
+                  "recoveryActionTaken": true,
+                  "finalHealthVerified": true
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ]
+        },
+        {
+          "variant": "devdeck-agent",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "api-crash",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:12:02.959Z",
+                "endedAt": "2026-06-26T11:15:33.657Z",
+                "durationMs": 210698,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 349562,
+                  "characters": 1096022
+                },
+                "toolCalls": 16,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: DevDeck session server\n\nroot cause: `listen EPERM` binding `127.0.0.1:4545`; API crash could not be observed through agent runtime\n\nrecovery action taken: `devdeck stop --agent`; session was already stopped\n\nfinal health result: not running; stack stopped cleanly, but final `running` health could not be verified because DevDeck agent endpoint was unreachable",
+                "providerUsage": {
+                  "inputTokens": 516306,
+                  "outputTokens": 3758,
+                  "totalTokens": 521384,
+                  "reasoningOutputTokens": 1320,
+                  "cachedInputTokens": 428544
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "api-crash",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": false,
+                  "rootCauseIdentified": true,
+                  "recoveryActionTaken": true,
+                  "finalHealthVerified": true
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 33110,
+                  "timeToRecovery": 1090129
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "noisy-worker",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "noisy-worker",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:15:35.133Z",
+                "endedAt": "2026-06-26T11:19:35.158Z",
+                "durationMs": 240025,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 6244,
+                  "characters": 23137
+                },
+                "toolCalls": 8,
+                "turns": 0,
+                "exitCode": 0,
+                "finalAnswer": "Process listing is restricted in this sandbox, so I’ll rely on PID files, direct health probes, and bounded service logs instead of `ps`. Starting the services now with `noglob` cleanup and recorded PIDs.",
+                "providerUsage": null,
+                "providerUsageReason": "Codex CLI did not expose provider token usage.",
+                "error": null
+              },
+              "score": {
+                "scenario": "noisy-worker",
+                "variant": "baseline-shell",
+                "passed": true,
+                "checks": {
+                  "warningIdentified": true,
+                  "noFalseFailedServiceClaim": true,
+                  "finalHealthVerified": true,
+                  "boundedToolUsage": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 0,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": false,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ]
+        },
+        {
+          "variant": "devdeck-agent",
+          "repeats": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "noisy-worker",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:19:36.418Z",
+                "endedAt": "2026-06-26T11:22:58.816Z",
+                "durationMs": 202398,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 209573,
+                  "characters": 618216
+                },
+                "toolCalls": 19,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: none\n\nroot cause: none; worker emitted benign warning `queue latency above threshold`\n\nrecovery action taken: none needed\n\nfinal health result: services reached `RUNNING`; DevDeck stopped cleanly after session ended",
+                "providerUsage": {
+                  "inputTokens": 525143,
+                  "outputTokens": 3299,
+                  "totalTokens": 529139,
+                  "reasoningOutputTokens": 697,
+                  "cachedInputTokens": 478976
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "noisy-worker",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "warningIdentified": true,
+                  "noFalseFailedServiceClaim": true,
+                  "finalHealthVerified": true,
+                  "boundedToolUsage": false
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [
+                  "Tool calls exceeded scenario limit (19/16)."
+                ],
+                "derived": {
+                  "wrongTurns": 2,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 23478,
+                  "timeToRecovery": 23917
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "aggregates": [
+    {
+      "id": "startup-success",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "startup-success",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T10:55:33.206Z",
+                "endedAt": "2026-06-26T10:58:45.155Z",
+                "durationMs": 191949,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 13422,
+                  "characters": 46822
+                },
+                "toolCalls": 14,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "- failed service: `postgres`, `redis`, `mock-external-api`, `web`; dependents `api`, `worker`, `scheduler` could not become healthy\n- root cause: local socket operations are blocked by the execution sandbox: `listen/connect EPERM` on `127.0.0.1` ports\n- recovery action taken: ran `npm run cleanup`; all fixture PIDs were already exited and cleanup completed\n- final health result: not running; `npm run health` failed at `127.0.0.1:15432` with `EPERM` before the stack could become healthy",
+                "providerUsage": {
+                  "inputTokens": 483543,
+                  "outputTokens": 4952,
+                  "totalTokens": 489862,
+                  "reasoningOutputTokens": 1367,
+                  "cachedInputTokens": 420224
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "startup-success",
+                "variant": "baseline-shell",
+                "passed": true,
+                "checks": {
+                  "noFailureClaim": true,
+                  "finalHealthVerified": true,
+                  "noUnnecessaryDiagnosis": true,
+                  "cleanStop": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 1,
+            "passRate": 1,
+            "medianTranscriptTokens": 13422,
+            "medianToolCalls": 14,
+            "medianDurationMs": 191949,
+            "medianTurns": 1,
+            "medianWrongTurns": 1,
+            "medianTimeToDiagnosis": null,
+            "medianTimeToRecovery": null,
+            "usedDevDeckRecoverRuns": 0,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 489862,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "startup-success",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T10:58:46.458Z",
+                "endedAt": "2026-06-26T11:00:01.326Z",
+                "durationMs": 74868,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 3766,
+                  "characters": 13648
+                },
+                "toolCalls": 5,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: DevDeck session server\n\nroot cause: DevDeck background process failed to become reachable at `http://127.0.0.1:4545` within 30s\n\nrecovery action taken: `devdeck recover --agent --wait 30` attempted; session server was unreachable\n\nfinal health result: stopped; no services running because DevDeck session did not start successfully",
+                "providerUsage": {
+                  "inputTokens": 155921,
+                  "outputTokens": 881,
+                  "totalTokens": 156845,
+                  "reasoningOutputTokens": 43,
+                  "cachedInputTokens": 133760
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "startup-success",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "noFailureClaim": true,
+                  "finalHealthVerified": true,
+                  "noUnnecessaryDiagnosis": false,
+                  "cleanStop": true
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 0,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": false,
+                  "timeToDiagnosis": 11837,
+                  "timeToRecovery": 12284
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 3766,
+            "medianToolCalls": 5,
+            "medianDurationMs": 74868,
+            "medianTurns": 1,
+            "medianWrongTurns": 0,
+            "medianTimeToDiagnosis": 11837,
+            "medianTimeToRecovery": 12284,
+            "usedDevDeckRecoverRuns": 1,
+            "usedRawLogsRuns": 0,
+            "providerUsage": {
+              "medianTotalTokens": 156845,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "missing-env",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "missing-env",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:00:02.612Z",
+                "endedAt": "2026-06-26T11:04:02.630Z",
+                "durationMs": 240018,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 474,
+                  "characters": 1760
+                },
+                "toolCalls": 0,
+                "turns": 0,
+                "exitCode": 0,
+                "finalAnswer": "",
+                "providerUsage": null,
+                "providerUsageReason": "Codex CLI did not expose provider token usage.",
+                "error": null
+              },
+              "score": {
+                "scenario": "missing-env",
+                "variant": "baseline-shell",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": false,
+                  "rootCauseIdentified": false,
+                  "boundedDiagnosisUsed": true,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": false
+                },
+                "passedChecks": 2,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 0,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": false,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 474,
+            "medianToolCalls": 0,
+            "medianDurationMs": 240018,
+            "medianTurns": 0,
+            "medianWrongTurns": 0,
+            "medianTimeToDiagnosis": null,
+            "medianTimeToRecovery": null,
+            "usedDevDeckRecoverRuns": 0,
+            "usedRawLogsRuns": 0,
+            "providerUsage": null,
+            "skipped": false
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "missing-env",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:04:03.859Z",
+                "endedAt": "2026-06-26T11:05:41.440Z",
+                "durationMs": 97581,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 21122,
+                  "characters": 67981
+                },
+                "toolCalls": 8,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: api\n\nroot cause: missing required env vars `DATABASE_URL` and `SESSION_SECRET`\n\nrecovery action taken: `devdeck recover --agent --wait 30` attempted, but DevDeck session server was unreachable; `devdeck stop --agent` reported session already stopped\n\nfinal health result: degraded; API exited due missing env, stack stopped cleanly",
+                "providerUsage": {
+                  "inputTokens": 255203,
+                  "outputTokens": 2081,
+                  "totalTokens": 257976,
+                  "reasoningOutputTokens": 692,
+                  "cachedInputTokens": 192256
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "missing-env",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": true,
+                  "rootCauseIdentified": true,
+                  "boundedDiagnosisUsed": false,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 15421,
+                  "timeToRecovery": 15888
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 21122,
+            "medianToolCalls": 8,
+            "medianDurationMs": 97581,
+            "medianTurns": 1,
+            "medianWrongTurns": 1,
+            "medianTimeToDiagnosis": 15421,
+            "medianTimeToRecovery": 15888,
+            "usedDevDeckRecoverRuns": 1,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 257976,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "port-conflict",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "port-conflict",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:05:42.804Z",
+                "endedAt": "2026-06-26T11:07:23.831Z",
+                "durationMs": 101027,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 10607,
+                  "characters": 35494
+                },
+                "toolCalls": 7,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: api\n\nroot cause: API port `4000` was already occupied by helper Node process `pid 25956`; release was blocked by `kill EPERM`. Additional sandbox signal: local binds/probes failed with `listen/connect EPERM`.\n\nrecovery action taken: attempted `node scripts/release-port.mjs`; stopped manually started service processes. Port helper remained running due `EPERM`.\n\nfinal health result: not recovered; health check could not complete and failed with `connect EPERM 127.0.0.1:15432`, while `127.0.0.1:4000` remained occupied.",
+                "providerUsage": {
+                  "inputTokens": 258620,
+                  "outputTokens": 3380,
+                  "totalTokens": 262965,
+                  "reasoningOutputTokens": 965,
+                  "cachedInputTokens": 203008
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "port-conflict",
+                "variant": "baseline-shell",
+                "passed": true,
+                "checks": {
+                  "failedServiceIdentified": true,
+                  "rootCauseIdentified": true,
+                  "boundedDiagnosisUsed": true,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": true
+                },
+                "passedChecks": 5,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 1,
+            "passRate": 1,
+            "medianTranscriptTokens": 10607,
+            "medianToolCalls": 7,
+            "medianDurationMs": 101027,
+            "medianTurns": 1,
+            "medianWrongTurns": 1,
+            "medianTimeToDiagnosis": null,
+            "medianTimeToRecovery": null,
+            "usedDevDeckRecoverRuns": 0,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 262965,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "port-conflict",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:07:25.163Z",
+                "endedAt": "2026-06-26T11:09:59.237Z",
+                "durationMs": 154074,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 52006,
+                  "characters": 176472
+                },
+                "toolCalls": 10,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: api\n\nroot cause: API port conflict, `127.0.0.1:4000` already in use (`EADDRINUSE`)\n\nrecovery action taken: `devdeck recover --agent --wait 30` attempted; DevDeck agent endpoint was unreachable\n\nfinal health result: degraded; stack stopped cleanly with `devdeck stop --agent`",
+                "providerUsage": {
+                  "inputTokens": 362484,
+                  "outputTokens": 2455,
+                  "totalTokens": 365744,
+                  "reasoningOutputTokens": 805,
+                  "cachedInputTokens": 297856
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "port-conflict",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": true,
+                  "rootCauseIdentified": true,
+                  "boundedDiagnosisUsed": false,
+                  "noIncorrectRecovery": true,
+                  "cleanupPerformed": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 5,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 17979,
+                  "timeToRecovery": 167791
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 52006,
+            "medianToolCalls": 10,
+            "medianDurationMs": 154074,
+            "medianTurns": 1,
+            "medianWrongTurns": 1,
+            "medianTimeToDiagnosis": 17979,
+            "medianTimeToRecovery": 167791,
+            "usedDevDeckRecoverRuns": 1,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 365744,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "api-crash",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "api-crash",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:10:00.371Z",
+                "endedAt": "2026-06-26T11:12:01.834Z",
+                "durationMs": 121463,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 12917,
+                  "characters": 47586
+                },
+                "toolCalls": 15,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: all socket-bound services failed to start\n\nroot cause: sandbox denied localhost socket bind/connect (`listen EPERM`, `connect EPERM`), so the intended API ready-then-crash scenario could not be observed\n\nrecovery action taken: ran `node scripts/cleanup.mjs`; all recorded service PIDs were already exited and PID files were cleared\n\nfinal health result: not running; stack stopped cleanly after cleanup",
+                "providerUsage": {
+                  "inputTokens": 305680,
+                  "outputTokens": 3916,
+                  "totalTokens": 310691,
+                  "reasoningOutputTokens": 1095,
+                  "cachedInputTokens": 242304
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "api-crash",
+                "variant": "baseline-shell",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": false,
+                  "rootCauseIdentified": true,
+                  "recoveryActionTaken": true,
+                  "finalHealthVerified": true
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 12917,
+            "medianToolCalls": 15,
+            "medianDurationMs": 121463,
+            "medianTurns": 1,
+            "medianWrongTurns": 1,
+            "medianTimeToDiagnosis": null,
+            "medianTimeToRecovery": null,
+            "usedDevDeckRecoverRuns": 0,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 310691,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "api-crash",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:12:02.959Z",
+                "endedAt": "2026-06-26T11:15:33.657Z",
+                "durationMs": 210698,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 349562,
+                  "characters": 1096022
+                },
+                "toolCalls": 16,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: DevDeck session server\n\nroot cause: `listen EPERM` binding `127.0.0.1:4545`; API crash could not be observed through agent runtime\n\nrecovery action taken: `devdeck stop --agent`; session was already stopped\n\nfinal health result: not running; stack stopped cleanly, but final `running` health could not be verified because DevDeck agent endpoint was unreachable",
+                "providerUsage": {
+                  "inputTokens": 516306,
+                  "outputTokens": 3758,
+                  "totalTokens": 521384,
+                  "reasoningOutputTokens": 1320,
+                  "cachedInputTokens": 428544
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "api-crash",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "failedServiceIdentified": false,
+                  "rootCauseIdentified": true,
+                  "recoveryActionTaken": true,
+                  "finalHealthVerified": true
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 1,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 33110,
+                  "timeToRecovery": 1090129
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 349562,
+            "medianToolCalls": 16,
+            "medianDurationMs": 210698,
+            "medianTurns": 1,
+            "medianWrongTurns": 1,
+            "medianTimeToDiagnosis": 33110,
+            "medianTimeToRecovery": 1090129,
+            "usedDevDeckRecoverRuns": 1,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 521384,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "noisy-worker",
+      "variants": [
+        {
+          "variant": "baseline-shell",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "noisy-worker",
+                "variant": "baseline-shell",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:15:35.133Z",
+                "endedAt": "2026-06-26T11:19:35.158Z",
+                "durationMs": 240025,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 6244,
+                  "characters": 23137
+                },
+                "toolCalls": 8,
+                "turns": 0,
+                "exitCode": 0,
+                "finalAnswer": "Process listing is restricted in this sandbox, so I’ll rely on PID files, direct health probes, and bounded service logs instead of `ps`. Starting the services now with `noglob` cleanup and recorded PIDs.",
+                "providerUsage": null,
+                "providerUsageReason": "Codex CLI did not expose provider token usage.",
+                "error": null
+              },
+              "score": {
+                "scenario": "noisy-worker",
+                "variant": "baseline-shell",
+                "passed": true,
+                "checks": {
+                  "warningIdentified": true,
+                  "noFalseFailedServiceClaim": true,
+                  "finalHealthVerified": true,
+                  "boundedToolUsage": true
+                },
+                "passedChecks": 4,
+                "totalChecks": 4,
+                "notes": [],
+                "derived": {
+                  "wrongTurns": 0,
+                  "usedDevDeckRecover": false,
+                  "usedRawLogs": false,
+                  "timeToDiagnosis": null,
+                  "timeToRecovery": null
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 1,
+            "passRate": 1,
+            "medianTranscriptTokens": 6244,
+            "medianToolCalls": 8,
+            "medianDurationMs": 240025,
+            "medianTurns": 0,
+            "medianWrongTurns": 0,
+            "medianTimeToDiagnosis": null,
+            "medianTimeToRecovery": null,
+            "usedDevDeckRecoverRuns": 0,
+            "usedRawLogsRuns": 0,
+            "providerUsage": null,
+            "skipped": false
+          }
+        },
+        {
+          "variant": "devdeck-agent",
+          "runs": [
+            {
+              "repeat": 1,
+              "run": {
+                "scenario": "noisy-worker",
+                "variant": "devdeck-agent",
+                "repeat": 1,
+                "agent": "codex",
+                "model": "codex-cli 0.125.0",
+                "startedAt": "2026-06-26T11:19:36.418Z",
+                "endedAt": "2026-06-26T11:22:58.816Z",
+                "durationMs": 202398,
+                "transcript": "transcript.txt",
+                "tokens": {
+                  "primaryTokenizer": "tiktoken-o200k_base",
+                  "transcriptTokens": 209573,
+                  "characters": 618216
+                },
+                "toolCalls": 19,
+                "turns": 1,
+                "exitCode": 0,
+                "finalAnswer": "failed service: none\n\nroot cause: none; worker emitted benign warning `queue latency above threshold`\n\nrecovery action taken: none needed\n\nfinal health result: services reached `RUNNING`; DevDeck stopped cleanly after session ended",
+                "providerUsage": {
+                  "inputTokens": 525143,
+                  "outputTokens": 3299,
+                  "totalTokens": 529139,
+                  "reasoningOutputTokens": 697,
+                  "cachedInputTokens": 478976
+                },
+                "providerUsageReason": null,
+                "error": null
+              },
+              "score": {
+                "scenario": "noisy-worker",
+                "variant": "devdeck-agent",
+                "passed": false,
+                "checks": {
+                  "warningIdentified": true,
+                  "noFalseFailedServiceClaim": true,
+                  "finalHealthVerified": true,
+                  "boundedToolUsage": false
+                },
+                "passedChecks": 3,
+                "totalChecks": 4,
+                "notes": [
+                  "Tool calls exceeded scenario limit (19/16)."
+                ],
+                "derived": {
+                  "wrongTurns": 2,
+                  "usedDevDeckRecover": true,
+                  "usedRawLogs": true,
+                  "timeToDiagnosis": 23478,
+                  "timeToRecovery": 23917
+                }
+              }
+            }
+          ],
+          "aggregate": {
+            "runs": 1,
+            "passed": 0,
+            "passRate": 0,
+            "medianTranscriptTokens": 209573,
+            "medianToolCalls": 19,
+            "medianDurationMs": 202398,
+            "medianTurns": 1,
+            "medianWrongTurns": 2,
+            "medianTimeToDiagnosis": 23478,
+            "medianTimeToRecovery": 23917,
+            "usedDevDeckRecoverRuns": 1,
+            "usedRawLogsRuns": 1,
+            "providerUsage": {
+              "medianTotalTokens": 529139,
+              "samples": 1
+            },
+            "skipped": false
+          }
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "scenario": "startup-success",
+      "baseline": {
+        "runs": 1,
+        "passed": 1,
+        "passRate": 1,
+        "medianTranscriptTokens": 13422,
+        "medianToolCalls": 14,
+        "medianDurationMs": 191949,
+        "medianTurns": 1,
+        "medianWrongTurns": 1,
+        "medianTimeToDiagnosis": null,
+        "medianTimeToRecovery": null,
+        "usedDevDeckRecoverRuns": 0,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 489862,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "devdeck": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 3766,
+        "medianToolCalls": 5,
+        "medianDurationMs": 74868,
+        "medianTurns": 1,
+        "medianWrongTurns": 0,
+        "medianTimeToDiagnosis": 11837,
+        "medianTimeToRecovery": 12284,
+        "usedDevDeckRecoverRuns": 1,
+        "usedRawLogsRuns": 0,
+        "providerUsage": {
+          "medianTotalTokens": 156845,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "tokenDelta": -9656,
+      "callDelta": -9
+    },
+    {
+      "scenario": "missing-env",
+      "baseline": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 474,
+        "medianToolCalls": 0,
+        "medianDurationMs": 240018,
+        "medianTurns": 0,
+        "medianWrongTurns": 0,
+        "medianTimeToDiagnosis": null,
+        "medianTimeToRecovery": null,
+        "usedDevDeckRecoverRuns": 0,
+        "usedRawLogsRuns": 0,
+        "providerUsage": null,
+        "skipped": false
+      },
+      "devdeck": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 21122,
+        "medianToolCalls": 8,
+        "medianDurationMs": 97581,
+        "medianTurns": 1,
+        "medianWrongTurns": 1,
+        "medianTimeToDiagnosis": 15421,
+        "medianTimeToRecovery": 15888,
+        "usedDevDeckRecoverRuns": 1,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 257976,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "tokenDelta": 20648,
+      "callDelta": 8
+    },
+    {
+      "scenario": "port-conflict",
+      "baseline": {
+        "runs": 1,
+        "passed": 1,
+        "passRate": 1,
+        "medianTranscriptTokens": 10607,
+        "medianToolCalls": 7,
+        "medianDurationMs": 101027,
+        "medianTurns": 1,
+        "medianWrongTurns": 1,
+        "medianTimeToDiagnosis": null,
+        "medianTimeToRecovery": null,
+        "usedDevDeckRecoverRuns": 0,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 262965,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "devdeck": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 52006,
+        "medianToolCalls": 10,
+        "medianDurationMs": 154074,
+        "medianTurns": 1,
+        "medianWrongTurns": 1,
+        "medianTimeToDiagnosis": 17979,
+        "medianTimeToRecovery": 167791,
+        "usedDevDeckRecoverRuns": 1,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 365744,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "tokenDelta": 41399,
+      "callDelta": 3
+    },
+    {
+      "scenario": "api-crash",
+      "baseline": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 12917,
+        "medianToolCalls": 15,
+        "medianDurationMs": 121463,
+        "medianTurns": 1,
+        "medianWrongTurns": 1,
+        "medianTimeToDiagnosis": null,
+        "medianTimeToRecovery": null,
+        "usedDevDeckRecoverRuns": 0,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 310691,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "devdeck": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 349562,
+        "medianToolCalls": 16,
+        "medianDurationMs": 210698,
+        "medianTurns": 1,
+        "medianWrongTurns": 1,
+        "medianTimeToDiagnosis": 33110,
+        "medianTimeToRecovery": 1090129,
+        "usedDevDeckRecoverRuns": 1,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 521384,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "tokenDelta": 336645,
+      "callDelta": 1
+    },
+    {
+      "scenario": "noisy-worker",
+      "baseline": {
+        "runs": 1,
+        "passed": 1,
+        "passRate": 1,
+        "medianTranscriptTokens": 6244,
+        "medianToolCalls": 8,
+        "medianDurationMs": 240025,
+        "medianTurns": 0,
+        "medianWrongTurns": 0,
+        "medianTimeToDiagnosis": null,
+        "medianTimeToRecovery": null,
+        "usedDevDeckRecoverRuns": 0,
+        "usedRawLogsRuns": 0,
+        "providerUsage": null,
+        "skipped": false
+      },
+      "devdeck": {
+        "runs": 1,
+        "passed": 0,
+        "passRate": 0,
+        "medianTranscriptTokens": 209573,
+        "medianToolCalls": 19,
+        "medianDurationMs": 202398,
+        "medianTurns": 1,
+        "medianWrongTurns": 2,
+        "medianTimeToDiagnosis": 23478,
+        "medianTimeToRecovery": 23917,
+        "usedDevDeckRecoverRuns": 1,
+        "usedRawLogsRuns": 1,
+        "providerUsage": {
+          "medianTotalTokens": 529139,
+          "samples": 1
+        },
+        "skipped": false
+      },
+      "tokenDelta": 203329,
+      "callDelta": 11
+    }
+  ],
+  "caveats": {
+    "transcriptTokens": "Local transcript-token approximation using tiktoken-o200k_base.",
+    "providerUsage": "Provider usage is included only when Codex CLI exposes it."
+  }
+}

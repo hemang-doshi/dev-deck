@@ -75,6 +75,13 @@ Committed proof artifacts belong under `evals/live-agent/reports/`. Raw transcri
 
 Published reports use aggregate pass rate and median metrics. Raw per-run artifacts remain in `results/`.
 
+Current published proof artifacts:
+
+- [2026-06-12 Codex live-agent v1](reports/2026-06-12-codex-live-agent-v1/summary.md)
+- [2026-06-26 Codex live-agent v2](reports/2026-06-26-codex-live-agent-v2/summary.md)
+
+The June 26, 2026 v2 report is the current real-agent proof snapshot for the bounded recovery loop. It captures real Codex behavior on the `complex-saas-stack` fixture, including cases where sandbox restrictions prevented a clean DevDeck session from becoming reachable. Keep that context with the report; it is evidence, not a universal claim.
+
 ## Metrics
 
 - `transcriptTokens` uses `tiktoken-o200k_base` as a local transcript approximation.
